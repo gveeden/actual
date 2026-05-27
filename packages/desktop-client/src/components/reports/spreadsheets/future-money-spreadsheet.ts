@@ -27,6 +27,7 @@ export type FutureMoneyData = {
     income: number;
     expenses: number;
     change: number;
+    isCompleted: boolean;
   }>;
 };
 
@@ -37,6 +38,9 @@ export function createFutureMoneySpreadsheet({
   accountIds = [],
   conditions = [],
   conditionsOp = 'and',
+  excludePartialMonths = false,
+  useManualIncome = false,
+  manualIncomeOverrides = {},
 }: {
   startDate?: string;
   endDate?: string;
@@ -44,6 +48,9 @@ export function createFutureMoneySpreadsheet({
   accountIds?: string[];
   conditions?: RuleConditionEntity[];
   conditionsOp?: 'and' | 'or';
+  excludePartialMonths?: boolean;
+  useManualIncome?: boolean;
+  manualIncomeOverrides?: Record<number, number>;
 }) {
   return async (
     spreadsheet: ReturnType<typeof useSpreadsheet>,
@@ -54,8 +61,13 @@ export function createFutureMoneySpreadsheet({
     });
     const conditionsOpKey = conditionsOp === 'or' ? '$or' : '$and';
 
-    const currentMonth = endDate ? monthUtils.monthFromDate(endDate) : monthUtils.currentMonth();
-    const historyStartMonth = startDate ? monthUtils.monthFromDate(startDate) : monthUtils.subMonths(currentMonth, 5);
+    const currentMonth = endDate
+      ? monthUtils.monthFromDate(endDate)
+      : monthUtils.currentMonth();
+
+    const historyStartMonth = startDate
+      ? monthUtils.monthFromDate(startDate)
+      : monthUtils.subMonths(currentMonth, 5);
     const historyEndMonth = currentMonth;
 
     const historyStart = monthUtils.firstDayOfMonth(historyStartMonth);
@@ -148,6 +160,7 @@ export function createFutureMoneySpreadsheet({
 
         let totalIncome = 0;
         let totalExpenses = 0;
+        let completedMonthCount = 0;
 
         // 1. History
         let runningBalance = startingBalance;
@@ -156,17 +169,25 @@ export function createFutureMoneySpreadsheet({
           historyEndMonth,
         );
 
+        const todayMonth = monthUtils.currentMonth();
+
         historyMonths.forEach(month => {
           const inc = historicalMonthlyIncome[month]?.amount || 0;
           const exp = historicalMonthlyExpenses[month]?.amount || 0;
-          totalIncome += inc;
-          totalExpenses += exp;
+          const isCompleted = month < todayMonth;
+
+          if (isCompleted || !excludePartialMonths) {
+            totalIncome += inc;
+            totalExpenses += exp;
+            completedMonthCount++;
+          }
 
           monthlyDetails.push({
             month,
             income: inc,
             expenses: exp,
             change: inc + exp,
+            isCompleted: isCompleted || !excludePartialMonths,
           });
 
           if (historicalMonthlyChanges[month]) {
@@ -184,8 +205,7 @@ export function createFutureMoneySpreadsheet({
           });
         });
 
-        const months = monthUtils.differenceInCalendarMonths(historyEndMonth, historyStartMonth) + 1;
-        const safeMonths = Math.max(1, months);
+        const safeMonths = Math.max(1, completedMonthCount);
         const monthlyAverageIncome = Math.round(totalIncome / safeMonths);
         const monthlyAverageExpenses = Math.round(totalExpenses / safeMonths);
         const monthlyAverageChange =
@@ -195,16 +215,23 @@ export function createFutureMoneySpreadsheet({
         let projectedBalance = currentBalance;
         const currentMonthDate = d.parseISO(currentMonth + '-01');
         for (let i = 1; i <= projectionMonths; i++) {
-          projectedBalance += monthlyAverageChange;
+          const manualIncome = manualIncomeOverrides[i];
+          const monthlyIncome =
+            useManualIncome && manualIncome != null
+              ? manualIncome
+              : monthlyAverageIncome;
+          const monthlyChange = monthlyIncome + monthlyAverageExpenses;
+
+          projectedBalance += monthlyChange;
           const projectionDate = d.addMonths(currentMonthDate, i);
           graphData.push({
             x: d.format(projectionDate, "MMM ''yy"),
             y: Math.round(projectedBalance),
             isProjection: true,
             date: projectionDate,
-            income: monthlyAverageIncome,
+            income: monthlyIncome,
             expenses: monthlyAverageExpenses,
-            change: monthlyAverageChange,
+            change: monthlyChange,
           });
         }
 

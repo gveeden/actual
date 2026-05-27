@@ -14,6 +14,7 @@ import { LoadingIndicator } from '#components/reports/LoadingIndicator';
 import { ReportCard } from '#components/reports/ReportCard';
 import { ReportCardName } from '#components/reports/ReportCardName';
 import { calculateTimeRange } from '#components/reports/reportRanges';
+<<<<<<< HEAD
 import {
   getDefaultLayerRange,
   topNNodes,
@@ -33,6 +34,10 @@ import type {
   type SankeyRawData,
 >>>>>>> 4547b60bc (Sanky edits)
 } from '#components/reports/spreadsheets/sankey-spreadsheet';
+=======
+import { GraphLayers, createSpreadsheet as sankeySpreadsheet, calculateGraphData } from '#components/reports/spreadsheets/sankey-spreadsheet';
+import type { SankeyRawData } from '#components/reports/spreadsheets/sankey-spreadsheet';
+>>>>>>> 8c90e69a7 (Updated reporting features and working syncing)
 import { useDashboardWidgetCopyMenu } from '#components/reports/useDashboardWidgetCopyMenu';
 import { useReport } from '#components/reports/useReport';
 import { useCategories } from '#hooks/useCategories';
@@ -122,7 +127,11 @@ export function SankeyCard({
 =======
         meta?.creditAccountIds ?? [],
         accounts,
+<<<<<<< HEAD
 >>>>>>> 4547b60bc (Sanky edits)
+=======
+        meta?.excludePartialMonths ?? false,
+>>>>>>> 8c90e69a7 (Updated reporting features and working syncing)
       ),
     [
       start,
@@ -160,6 +169,7 @@ export function SankeyCard({
 =======
       meta?.creditAccountIds,
       accounts,
+      meta?.excludePartialMonths,
     ],
   );
   const rawData = useReport<SankeyRawData>('sankey', params);
@@ -185,6 +195,7 @@ export function SankeyCard({
       end,
       meta?.showAccounts ?? true,
       meta?.showCarryForward ?? true,
+      meta?.excludePartialMonths ?? false,
     );
   }, [
     rawData,
@@ -203,6 +214,7 @@ export function SankeyCard({
     end,
     meta?.showAccounts,
     meta?.showCarryForward,
+    meta?.excludePartialMonths,
   ]);
 
   const compactData = useMemo(() => graphData, [graphData]);
@@ -241,6 +253,12 @@ export function SankeyCard({
           text: t('Rename'),
         },
         {
+          name: 'toggle-partial-months',
+          text: meta?.excludePartialMonths
+            ? t('Include partial months')
+            : t('Exclude partial months'),
+        },
+        {
           name: 'remove',
           text: t('Remove'),
         },
@@ -251,6 +269,12 @@ export function SankeyCard({
         switch (item) {
           case 'rename':
             setNameMenuOpen(true);
+            break;
+          case 'toggle-partial-months':
+            onMetaChange({
+              ...meta,
+              excludePartialMonths: !meta?.excludePartialMonths,
+            });
             break;
           case 'remove':
             onRemove();

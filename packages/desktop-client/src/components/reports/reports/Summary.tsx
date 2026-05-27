@@ -78,6 +78,20 @@ function SummaryInner({ widget }: SummaryInnerProps) {
   );
   const [end, setEnd] = useState(monthUtils.currentDay());
   const [mode, setMode] = useState<TimeFrame['mode']>('full');
+  const [excludePartialMonths, setExcludePartialMonths] = useState(
+    widget?.meta?.excludePartialMonths ??
+      (window.localStorage.getItem('summary-exclude-partial') === 'true'),
+  );
+
+  const handleExcludePartialMonthsToggle = () => {
+    setExcludePartialMonths(prev => {
+      const newValue = !prev;
+      if (!widget) {
+        window.localStorage.setItem('summary-exclude-partial', String(newValue));
+      }
+      return newValue;
+    });
+  };
 
   const dividendFilters: FilterObject = useRuleConditionFilters(
     widget?.meta?.conditions ?? [],
@@ -123,6 +137,7 @@ function SummaryInner({ widget }: SummaryInnerProps) {
         dividendFilters.conditionsOp,
         content,
         locale,
+        excludePartialMonths,
       ),
     [
       start,
@@ -131,6 +146,7 @@ function SummaryInner({ widget }: SummaryInnerProps) {
       dividendFilters.conditionsOp,
       content,
       locale,
+      excludePartialMonths,
     ],
   );
 
@@ -291,6 +307,7 @@ function SummaryInner({ widget }: SummaryInnerProps) {
               mode,
             },
             content: JSON.stringify(content),
+            excludePartialMonths,
           },
         },
       },
@@ -410,6 +427,25 @@ function SummaryInner({ widget }: SummaryInnerProps) {
               )
             }
           />
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginLeft: 16,
+            }}
+          >
+            <Checkbox
+              id="exclude-partial-months-field"
+              checked={excludePartialMonths}
+              onChange={handleExcludePartialMonthsToggle}
+            />
+            <label
+              htmlFor="exclude-partial-months-field"
+              style={{ marginLeft: 4, userSelect: 'none' }}
+            >
+              <Trans>Exclude partial months</Trans>
+            </label>
+          </View>
         </View>
         {content.type === 'percentage' && (
           <View style={{ flexDirection: 'row', marginLeft: 16 }}>

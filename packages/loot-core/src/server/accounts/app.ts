@@ -1192,18 +1192,18 @@ async function trueLayerCompleteAuth({
     const connectionId = meRes.results[0].credentials_id;
     const suffix = truelayer.getPrefSuffix(connectionId);
 
-    await db.run(
-      `INSERT OR REPLACE INTO preferences (id, value) VALUES ('truelayer-access-token${suffix}', ?)`,
-      [access_token],
-    );
-    await db.run(
-      `INSERT OR REPLACE INTO preferences (id, value) VALUES ('truelayer-refresh-token${suffix}', ?)`,
-      [refresh_token],
-    );
-    await db.run(
-      `INSERT OR REPLACE INTO preferences (id, value) VALUES ('truelayer-expires-at${suffix}', ?)`,
-      [expiresAt.toString()],
-    );
+    await db.update('preferences', {
+      id: `truelayer-access-token${suffix}`,
+      value: access_token,
+    });
+    await db.update('preferences', {
+      id: `truelayer-refresh-token${suffix}`,
+      value: refresh_token,
+    });
+    await db.update('preferences', {
+      id: `truelayer-expires-at${suffix}`,
+      value: expiresAt.toString(),
+    });
 
     await truelayer.addConnection(connectionId);
 

@@ -151,31 +151,25 @@ export async function addConnection(connectionId: string): Promise<void> {
   const connections = await getConnections();
   if (!connections.includes(connectionId)) {
     connections.push(connectionId);
-    await db.run(
-      "INSERT OR REPLACE INTO preferences (id, value) VALUES ('truelayer-all-connections', ?)",
-      [JSON.stringify(connections)],
-    );
+    await db.update('preferences', {
+      id: 'truelayer-all-connections',
+      value: JSON.stringify(connections),
+    });
   }
 }
 
 export async function removeConnection(connectionId: string): Promise<void> {
   const connections = await getConnections();
   const updatedConnections = connections.filter(id => id !== connectionId);
-  await db.run(
-    "INSERT OR REPLACE INTO preferences (id, value) VALUES ('truelayer-all-connections', ?)",
-    [JSON.stringify(updatedConnections)],
-  );
+  await db.update('preferences', {
+    id: 'truelayer-all-connections',
+    value: JSON.stringify(updatedConnections),
+  });
 
   const suffix = getPrefSuffix(connectionId);
-  await db.run("DELETE FROM preferences WHERE id = ?", [
-    `truelayer-access-token${suffix}`,
-  ]);
-  await db.run("DELETE FROM preferences WHERE id = ?", [
-    `truelayer-refresh-token${suffix}`,
-  ]);
-  await db.run("DELETE FROM preferences WHERE id = ?", [
-    `truelayer-expires-at${suffix}`,
-  ]);
+  await db.update('preferences', { id: `truelayer-access-token${suffix}`, value: null });
+  await db.update('preferences', { id: `truelayer-refresh-token${suffix}`, value: null });
+  await db.update('preferences', { id: `truelayer-expires-at${suffix}`, value: null });
 }
 
 export function getPrefSuffix(connectionId?: string) {
@@ -239,18 +233,18 @@ export async function refreshTrueLayerToken(
     const { access_token, refresh_token, expires_in } = data;
     const expiresAt = Date.now() + expires_in * 1000;
 
-    await db.run(
-      `INSERT OR REPLACE INTO preferences (id, value) VALUES ('truelayer-access-token${suffix}', ?)`,
-      [access_token],
-    );
-    await db.run(
-      `INSERT OR REPLACE INTO preferences (id, value) VALUES ('truelayer-refresh-token${suffix}', ?)`,
-      [refresh_token],
-    );
-    await db.run(
-      `INSERT OR REPLACE INTO preferences (id, value) VALUES ('truelayer-expires-at${suffix}', ?)`,
-      [expiresAt.toString()],
-    );
+    await db.update('preferences', {
+      id: `truelayer-access-token${suffix}`,
+      value: access_token,
+    });
+    await db.update('preferences', {
+      id: `truelayer-refresh-token${suffix}`,
+      value: refresh_token,
+    });
+    await db.update('preferences', {
+      id: `truelayer-expires-at${suffix}`,
+      value: expiresAt.toString(),
+    });
 
     return access_token;
   } catch (err: any) {

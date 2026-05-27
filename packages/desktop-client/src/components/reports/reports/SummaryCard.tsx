@@ -89,8 +89,17 @@ export function SummaryCard({
         meta?.conditionsOp,
         content,
         locale,
+        meta?.excludePartialMonths ?? false,
       ),
-    [start, end, meta?.conditions, meta?.conditionsOp, content, locale],
+    [
+      start,
+      end,
+      meta?.conditions,
+      meta?.conditionsOp,
+      content,
+      locale,
+      meta?.excludePartialMonths,
+    ],
   );
 
   const data = useReport('summary', params);
@@ -106,6 +115,12 @@ export function SummaryCard({
           text: t('Rename'),
         },
         {
+          name: 'toggle-partial-months',
+          text: meta?.excludePartialMonths
+            ? t('Include partial months')
+            : t('Exclude partial months'),
+        },
+        {
           name: 'remove',
           text: t('Remove'),
         },
@@ -116,6 +131,12 @@ export function SummaryCard({
         switch (item) {
           case 'rename':
             setNameMenuOpen(true);
+            break;
+          case 'toggle-partial-months':
+            onMetaChange({
+              ...meta,
+              excludePartialMonths: !meta?.excludePartialMonths,
+            });
             break;
           case 'remove':
             onRemove();
@@ -140,7 +161,10 @@ export function SummaryCard({
             }}
             onClose={() => setNameMenuOpen(false)}
           />
-          <DateRange start={start} end={end} />
+          <DateRange
+            start={data?.effectiveStart || start}
+            end={data?.effectiveEnd || end}
+          />
         </View>
         <View
           style={{

@@ -228,6 +228,7 @@ export function buildSankeyData(
 =======
   creditAccountIds: string[] = [],
   accounts: AccountEntity[] = [],
+  excludePartialMonths: boolean = false,
 ) {
   return async (
     spreadsheet: ReturnType<typeof useSpreadsheet>,
@@ -235,17 +236,24 @@ export function buildSankeyData(
   ) => {
     let data: CategoryEntry[] = [];
     let aggregated: AggregatedBudget | undefined;
+
+    const currentMonth = monthUtils.currentMonth();
+    const effectiveEnd =
+      excludePartialMonths && monthUtils.getMonth(end) === currentMonth
+        ? monthUtils.prevMonth(currentMonth)
+        : end;
+
     if (mode === 'budgeted') {
       ({ data, aggregated } = await createBudgetSpreadsheet(
         start,
-        end,
+        effectiveEnd,
         conditions,
         conditionsOp,
       )());
     } else if (mode === 'spent') {
       data = await createTransactionsSpreadsheet(
         start,
-        end,
+        effectiveEnd,
         categories,
         conditions,
         conditionsOp,
@@ -290,14 +298,31 @@ export function calculateGraphData(
   endDate: string = '',
   showAccounts: boolean = true,
   showCarryForward: boolean = true,
+  excludePartialMonths: boolean = false,
 ): SankeyData {
+  const currentMonth = monthUtils.currentMonth();
+  const effectiveEndDate =
+    excludePartialMonths && monthUtils.getMonth(endDate) === currentMonth
+      ? monthUtils.lastDayOfMonth(monthUtils.prevMonth(currentMonth))
+      : monthUtils.lastDayOfMonth(endDate);
+
   const { data: categoryData, aggregated } = rawData;
   let graph: Graph;
   if (aggregated) {
     graph = createBudgetGraph(categoryData, aggregated);
   } else {
+    // Filter raw transaction data if end date was truncated
+    const filteredCategoryData =
+      effectiveEndDate < monthUtils.lastDayOfMonth(endDate)
+        ? categoryData.filter(e => {
+            // This is tricky because raw data doesn't have individual dates, only months
+            // But we already fetched based on the truncated date in the spreadsheet
+            return true;
+          })
+        : categoryData;
+
     graph = createTransactionsGraph(
-      categoryData,
+      filteredCategoryData,
       creditAccountIds,
       showCarryForward,
     );
@@ -307,9 +332,9 @@ export function calculateGraphData(
     collapseSankeyLayer(graph, GraphLayers.Account);
   }
 
-  if (showAverage && startDate && endDate) {
+  if (showAverage && startDate && effectiveEndDate) {
     const months =
-      monthUtils.differenceInCalendarMonths(endDate, startDate) + 1;
+      monthUtils.differenceInCalendarMonths(effectiveEndDate, startDate) + 1;
     averageGraphValues(graph, months);
   }
 

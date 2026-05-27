@@ -91,6 +91,7 @@ export function NetWorthCard({
         meta?.interval || 'Monthly',
         firstDayOfWeekIdx,
         format,
+        meta?.excludePartialMonths ?? false,
       ),
     [
       start,
@@ -102,6 +103,7 @@ export function NetWorthCard({
       meta?.interval,
       firstDayOfWeekIdx,
       format,
+      meta?.excludePartialMonths,
     ],
   );
   const data = useReport('net_worth', params);
@@ -117,6 +119,12 @@ export function NetWorthCard({
           text: t('Rename'),
         },
         {
+          name: 'toggle-partial-months',
+          text: meta?.excludePartialMonths
+            ? t('Include partial months')
+            : t('Exclude partial months'),
+        },
+        {
           name: 'remove',
           text: t('Remove'),
         },
@@ -128,11 +136,17 @@ export function NetWorthCard({
           case 'rename':
             setNameMenuOpen(true);
             break;
+          case 'toggle-partial-months':
+            onMetaChange({
+              ...meta,
+              excludePartialMonths: !meta?.excludePartialMonths,
+            });
+            break;
           case 'remove':
             onRemove();
             break;
           default:
-            throw new Error(`Unrecognized selection: ${item}`);
+            throw new Error(`Unrecognized menu selection: ${item}`);
         }
       }}
     >

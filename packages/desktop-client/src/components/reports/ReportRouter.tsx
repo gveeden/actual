@@ -10,6 +10,7 @@ import { BalanceForecast } from './reports/BalanceForecast';
 import { BudgetAnalysis } from './reports/BudgetAnalysis';
 import { Calendar } from './reports/Calendar';
 import { CashFlow } from './reports/CashFlow';
+import { Comparison } from './reports/Comparison';
 import { Crossover } from './reports/Crossover';
 import { CustomReport } from './reports/CustomReport';
 import { Formula } from './reports/Formula';
@@ -82,7 +83,12 @@ export function ReportRouter() {
       <Route path="/future-money/:id" element={<FutureMoney />} />
       <Route path="/crossover" element={<Crossover />} />
       <Route path="/crossover/:id" element={<Crossover />} />
+<<<<<<< HEAD
 >>>>>>> 4547b60bc (Sanky edits)
+=======
+      <Route path="/comparison" element={<Comparison />} />
+      <Route path="/comparison/:id" element={<Comparison />} />
+>>>>>>> 8c90e69a7 (Updated reporting features and working syncing)
       {ageOfMoneyReportEnabled && (
         <>
           <Route

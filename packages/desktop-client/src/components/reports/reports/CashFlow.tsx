@@ -21,6 +21,7 @@ import * as d from 'date-fns';
 
 import { EditablePageHeaderTitle } from '#components/EditablePageHeaderTitle';
 import { FinancialText } from '#components/FinancialText';
+import { Checkbox } from '#components/forms';
 import { MobileBackButton } from '#components/mobile/MobileBackButton';
 import { MobilePageHeader, Page, PageHeader } from '#components/Page';
 import { PrivacyFilter } from '#components/PrivacyFilter';
@@ -94,6 +95,20 @@ function CashFlowInner({ widget }: CashFlowInnerProps) {
   const [showBalance, setShowBalance] = useState(
     widget?.meta?.showBalance ?? true,
   );
+  const [excludePartialMonths, setExcludePartialMonths] = useState(
+    widget?.meta?.excludePartialMonths ??
+      (window.localStorage.getItem('cash-flow-exclude-partial') === 'true'),
+  );
+
+  const handleExcludePartialMonthsToggle = () => {
+    setExcludePartialMonths(prev => {
+      const newValue = !prev;
+      if (!widget) {
+        window.localStorage.setItem('cash-flow-exclude-partial', String(newValue));
+      }
+      return newValue;
+    });
+  };
   const [latestTransaction, setLatestTransaction] = useState('');
 
   const [isConcise, setIsConcise] = useState(false);
@@ -116,8 +131,18 @@ function CashFlowInner({ widget }: CashFlowInnerProps) {
         conditionsOp,
         locale,
         format,
+        excludePartialMonths,
       ),
-    [start, end, isConcise, conditions, conditionsOp, locale, format],
+    [
+      start,
+      end,
+      isConcise,
+      conditions,
+      conditionsOp,
+      locale,
+      format,
+      excludePartialMonths,
+    ],
   );
   const data = useReport('cash_flow', params);
 
@@ -203,6 +228,7 @@ function CashFlowInner({ widget }: CashFlowInnerProps) {
               mode,
             },
             showBalance,
+            excludePartialMonths,
           },
         },
       },
@@ -297,6 +323,20 @@ function CashFlowInner({ widget }: CashFlowInnerProps) {
           <Button onPress={() => setShowBalance(state => !state)}>
             {showBalance ? t('Hide balance') : t('Show balance')}
           </Button>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Checkbox
+              id="exclude-partial-months-field"
+              checked={excludePartialMonths}
+              onChange={handleExcludePartialMonthsToggle}
+            />
+            <label
+              htmlFor="exclude-partial-months-field"
+              style={{ marginLeft: 4, userSelect: 'none' }}
+            >
+              <Trans>Exclude partial months</Trans>
+            </label>
+          </View>
 
           {widget && (
             <Button variant="primary" onPress={onSaveWidget}>

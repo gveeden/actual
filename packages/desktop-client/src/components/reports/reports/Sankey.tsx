@@ -39,6 +39,7 @@ import { Header } from '#components/reports/Header';
 import { LoadingIndicator } from '#components/reports/LoadingIndicator';
 import { ModeButton } from '#components/reports/ModeButton';
 import { calculateTimeRange } from '#components/reports/reportRanges';
+<<<<<<< HEAD
 import {
   buildSankeyData,
   createBaseGraphSpreadsheet,
@@ -52,6 +53,10 @@ import {
 >>>>>>> 4547b60bc (Sanky edits)
 } from '#components/reports/spreadsheets/sankey-spreadsheet';
 import type { Graph } from '#components/reports/spreadsheets/sankey-spreadsheet';
+=======
+import { GRAPH_LAYER_ORDER, GraphLayers, createSpreadsheet as sankeySpreadsheet, calculateGraphData } from '#components/reports/spreadsheets/sankey-spreadsheet';
+import type { SankeyRawData } from '#components/reports/spreadsheets/sankey-spreadsheet';
+>>>>>>> 8c90e69a7 (Updated reporting features and working syncing)
 import { useReport } from '#components/reports/useReport';
 import { fromDateRepr } from '#components/reports/util';
 import { AccountSelector } from '#components/reports/AccountSelector';
@@ -313,7 +318,7 @@ function CreditAccountSelector({
         aria-label={t('Select credit accounts')}
       >
         <SvgList style={{ width: 12, height: 12 }} />
-        <span style={{ marginLeft: 5 }}>{t('Credit accounts')}</span>
+        <span style={{ marginLeft: 5 }}>{<Trans>Credit accounts</Trans>}</span>
       </Button>
       <Popover
         triggerRef={triggerRef}
@@ -434,7 +439,12 @@ type OptionsButtonProps = {
   onToggleShowAccounts: () => void;
   showCarryForward: boolean;
   onToggleShowCarryForward: () => void;
+<<<<<<< HEAD
 >>>>>>> 4547b60bc (Sanky edits)
+=======
+  excludePartialMonths: boolean;
+  onToggleExcludePartialMonths: () => void;
+>>>>>>> 8c90e69a7 (Updated reporting features and working syncing)
 };
 
 function OptionsButton({
@@ -450,7 +460,12 @@ function OptionsButton({
   onToggleShowAccounts,
   showCarryForward,
   onToggleShowCarryForward,
+<<<<<<< HEAD
 >>>>>>> 4547b60bc (Sanky edits)
+=======
+  excludePartialMonths,
+  onToggleExcludePartialMonths,
+>>>>>>> 8c90e69a7 (Updated reporting features and working syncing)
 }: OptionsButtonProps) {
   const { t } = useTranslation();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -475,7 +490,12 @@ function OptionsButton({
             if (item === 'show-average') onToggleAverage();
             if (item === 'show-accounts') onToggleShowAccounts();
             if (item === 'show-carry-forward') onToggleShowCarryForward();
+<<<<<<< HEAD
 >>>>>>> 4547b60bc (Sanky edits)
+=======
+            if (item === 'exclude-partial-months')
+              {onToggleExcludePartialMonths();}
+>>>>>>> 8c90e69a7 (Updated reporting features and working syncing)
           }}
           items={[
             {
@@ -503,6 +523,11 @@ function OptionsButton({
               text: t('Show carry forward'),
               toggle: showCarryForward,
 >>>>>>> 4547b60bc (Sanky edits)
+            },
+            {
+              name: 'exclude-partial-months',
+              text: t('Exclude partial months'),
+              toggle: excludePartialMonths,
             },
           ]}
         />
@@ -607,6 +632,20 @@ function SankeyInner({ widget }: SankeyInnerProps) {
     widget?.meta?.showCarryForward ?? true,
 >>>>>>> 4547b60bc (Sanky edits)
   );
+  const [excludePartialMonths, setExcludePartialMonths] = useState(
+    widget?.meta?.excludePartialMonths ??
+      (window.localStorage.getItem('sankey-exclude-partial') === 'true'),
+  );
+
+  const handleExcludePartialMonthsToggle = () => {
+    setExcludePartialMonths(prev => {
+      const newValue = !prev;
+      if (!widget) {
+        window.localStorage.setItem('sankey-exclude-partial', String(newValue));
+      }
+      return newValue;
+    });
+  };
 
   const [layerRange, setLayerRange] = useState<LayerRange>(() =>
     normalizeLayerRange(widget?.meta?.mode ?? 'spent', {
@@ -687,7 +726,11 @@ function SankeyInner({ widget }: SankeyInnerProps) {
 =======
       creditAccountIds,
       accounts,
+<<<<<<< HEAD
 >>>>>>> 4547b60bc (Sanky edits)
+=======
+      excludePartialMonths,
+>>>>>>> 8c90e69a7 (Updated reporting features and working syncing)
     );
   }, [
     datesInitialized,
@@ -741,6 +784,7 @@ function SankeyInner({ widget }: SankeyInnerProps) {
 =======
     creditAccountIds,
     accounts,
+    excludePartialMonths,
   ]);
 
   const defaultGetData = async (
@@ -765,6 +809,7 @@ function SankeyInner({ widget }: SankeyInnerProps) {
       end,
       showAccounts,
       showCarryForward,
+      excludePartialMonths,
     );
   }, [
     rawData,
@@ -779,6 +824,7 @@ function SankeyInner({ widget }: SankeyInnerProps) {
     end,
     showAccounts,
     showCarryForward,
+    excludePartialMonths,
   ]);
 
 >>>>>>> 4547b60bc (Sanky edits)
@@ -870,6 +916,7 @@ function SankeyInner({ widget }: SankeyInnerProps) {
             showAverage,
             showAccounts,
             showCarryForward,
+            excludePartialMonths,
             layerFrom,
             layerTo,
             creditAccountIds,
@@ -1053,6 +1100,7 @@ function SankeyInner({ widget }: SankeyInnerProps) {
           </>
         }
       >
+<<<<<<< HEAD
         <View style={{ marginRight: 4 }}>
           <OptionsButton
             showPercentages={showPercentages}
@@ -1073,8 +1121,28 @@ function SankeyInner({ widget }: SankeyInnerProps) {
 >>>>>>> 4547b60bc (Sanky edits)
           />
         </View>
+=======
+        <OptionsButton
+          showPercentages={showPercentages}
+          onTogglePercentages={() => setShowPercentages(!showPercentages)}
+          showAverage={showAverage}
+          onToggleAverage={() => setShowAverage(!showAverage)}
+          showAccounts={showAccounts}
+          onToggleShowAccounts={() => setShowAccounts(!showAccounts)}
+          showCarryForward={showCarryForward}
+          onToggleShowCarryForward={() =>
+            setShowCarryForward(!showCarryForward)
+          }
+          excludePartialMonths={excludePartialMonths}
+          onToggleExcludePartialMonths={handleExcludePartialMonthsToggle}
+        />
+>>>>>>> 8c90e69a7 (Updated reporting features and working syncing)
         {widget && (
-          <Button variant="primary" onPress={onSaveWidget}>
+          <Button
+            variant="primary"
+            onPress={onSaveWidget}
+            style={{ marginLeft: 10 }}
+          >
             <Trans>Save widget</Trans>
           </Button>
         )}

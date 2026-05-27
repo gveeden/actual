@@ -24,6 +24,7 @@ import * as d from 'date-fns';
 
 import { EditablePageHeaderTitle } from '#components/EditablePageHeaderTitle';
 import { FinancialText } from '#components/FinancialText';
+import { Checkbox } from '#components/forms';
 import { MobileBackButton } from '#components/mobile/MobileBackButton';
 import { MobilePageHeader, Page, PageHeader } from '#components/Page';
 import { PrivacyFilter } from '#components/PrivacyFilter';
@@ -108,6 +109,20 @@ function NetWorthInner({ widget }: NetWorthInnerProps) {
   const [graphMode, setGraphMode] = useState<'trend' | 'stacked'>(
     widget?.meta?.mode || 'trend',
   );
+  const [excludePartialMonths, setExcludePartialMonths] = useState(
+    widget?.meta?.excludePartialMonths ??
+      (window.localStorage.getItem('net-worth-exclude-partial') === 'true'),
+  );
+
+  const handleExcludePartialMonthsToggle = () => {
+    setExcludePartialMonths(prev => {
+      const newValue = !prev;
+      if (!widget) {
+        window.localStorage.setItem('net-worth-exclude-partial', String(newValue));
+      }
+      return newValue;
+    });
+  };
   // Combined setter: set mode and update interval (unless interval was set in widget meta)
   const setModeAndInterval = useCallback(
     (newMode: TimeFrame['mode']) => {
@@ -243,6 +258,7 @@ function NetWorthInner({ widget }: NetWorthInnerProps) {
               end,
               mode,
             },
+            excludePartialMonths,
           },
         },
       },
@@ -334,6 +350,19 @@ function NetWorthInner({ widget }: NetWorthInnerProps) {
           <>
             <IntervalSelector interval={interval} onChange={setInterval} />
             <ModeSelector mode={graphMode} onChange={setGraphMode} />
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Checkbox
+                id="exclude-partial-months-field"
+                checked={excludePartialMonths}
+                onChange={handleExcludePartialMonthsToggle}
+              />
+              <label
+                htmlFor="exclude-partial-months-field"
+                style={{ marginLeft: 4, userSelect: 'none' }}
+              >
+                <Trans>Exclude partial months</Trans>
+              </label>
+            </View>
           </>
         }
       >

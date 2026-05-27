@@ -13,6 +13,7 @@ import { Block } from '@actual-app/components/block';
 import { Button } from '@actual-app/components/button';
 import { useResponsive } from '@actual-app/components/hooks/useResponsive';
 import { SvgCalendar, SvgChart } from '@actual-app/components/icons/v1';
+import { Input } from '@actual-app/components/input';
 import { Menu } from '@actual-app/components/menu';
 import { Paragraph } from '@actual-app/components/paragraph';
 import { Popover } from '@actual-app/components/popover';
@@ -29,6 +30,7 @@ import type {
 
 import { EditablePageHeaderTitle } from '#components/EditablePageHeaderTitle';
 import { FinancialText } from '#components/FinancialText';
+import { Checkbox } from '#components/forms';
 import { MobileBackButton } from '#components/mobile/MobileBackButton';
 import { MobilePageHeader, Page, PageHeader } from '#components/Page';
 import { PrivacyFilter } from '#components/PrivacyFilter';
@@ -96,10 +98,31 @@ function FutureMoneyInner({ widget }: FutureMoneyInnerProps) {
   const [averagingPeriod, setAveragingPeriod] = useState(
     widget?.meta?.averagingPeriod ?? 6,
   );
+  const [useManualIncome, setUseManualIncome] = useState(
+    widget?.meta?.useManualIncome ?? false,
+  );
+  const [manualIncomeOverrides, setManualIncomeOverrides] = useState(
+    widget?.meta?.manualIncomeOverrides ?? {},
+  );
 
   const [start, setStart] = useState(monthUtils.currentMonth());
   const [end, setEnd] = useState(monthUtils.currentMonth());
   const [mode, setMode] = useState<TimeFrame['mode']>('sliding-window');
+  const [excludePartialMonths, setExcludePartialMonths] = useState(
+    widget?.meta?.excludePartialMonths ??
+      (window.localStorage.getItem('future-money-exclude-partial') === 'true' ||
+      window.localStorage.getItem('future-money-exclude-partial') === null),
+  );
+
+  const handleExcludePartialMonthsToggle = () => {
+    setExcludePartialMonths(prev => {
+      const newValue = !prev;
+      if (!widget) {
+        window.localStorage.setItem('future-money-exclude-partial', String(newValue));
+      }
+      return newValue;
+    });
+  };
 
   const [allMonths, setAllMonths] = useState<Array<{
     name: string;
@@ -181,6 +204,9 @@ const params = useMemo(
       accountIds: widget?.meta?.accountIds,
       conditions,
       conditionsOp,
+      excludePartialMonths,
+      useManualIncome,
+      manualIncomeOverrides,
     }),
   [
     start,
@@ -189,6 +215,9 @@ const params = useMemo(
     widget?.meta?.accountIds,
     conditions,
     conditionsOp,
+    excludePartialMonths,
+    useManualIncome,
+    manualIncomeOverrides,
   ],
 );
   const data = useReport<FutureMoneyData>('future_money', params);
@@ -213,6 +242,9 @@ const params = useMemo(
               end,
               mode,
             },
+            excludePartialMonths,
+            useManualIncome,
+            manualIncomeOverrides,
           },
         },
       },
@@ -309,6 +341,44 @@ const params = useMemo(
               projectionMonths={projectionMonths}
               onChange={setProjectionMonths}
             />
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginLeft: 10,
+              }}
+            >
+              <Checkbox
+                id="manual-income-field"
+                checked={useManualIncome}
+                onChange={() => setUseManualIncome(!useManualIncome)}
+              />
+              <label
+                htmlFor="manual-income-field"
+                style={{ marginLeft: 4, userSelect: 'none' }}
+              >
+                <Trans>Manual income</Trans>
+              </label>
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginLeft: 10,
+              }}
+            >
+              <Checkbox
+                id="exclude-partial-months-field"
+                checked={excludePartialMonths}
+                onChange={handleExcludePartialMonthsToggle}
+              />
+              <label
+                htmlFor="exclude-partial-months-field"
+                style={{ marginLeft: 4, userSelect: 'none' }}
+              >
+                <Trans>Exclude partial months</Trans>
+              </label>
+            </View>
           </>
         }
       >
@@ -421,6 +491,17 @@ const params = useMemo(
                   >
                     <View style={{ flex: 1, fontWeight: 'bold' }}>
                       {monthUtils.format(detail.month, 'MMMM yyyy')}
+                      {!detail.isCompleted && (
+                        <View
+                          style={{
+                            ...styles.verySmallText,
+                            color: theme.pageTextSubdued,
+                            fontWeight: 'normal',
+                          }}
+                        >
+                          <Trans>(Partial month - excluded from average)</Trans>
+                        </View>
+                      )}
                     </View>
                     <View style={{ flex: 1, textAlign: 'right' }}>
                       <View style={{ color: theme.noticeText }}>
@@ -438,9 +519,150 @@ const params = useMemo(
               </View>
             </View>
           )}
+
+          <View style={{ marginTop: 40 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Paragraph style={{ margin: 0 }}>
+                <strong>
+                  <Trans>Projection Breakdown</Trans>
+                </strong>
+              </Paragraph>
+              {useManualIncome &&
+                Object.keys(manualIncomeOverrides).length > 0 && (
+                  <Button
+                    variant="bare"
+                    onPress={() => setManualIncomeOverrides({})}
+                    style={{ color: theme.errorText }}
+                  >
+                    <Trans>Reset all overrides</Trans>
+                  </Button>
+                )}
+            </View>
+            <View
+              style={{
+                borderTop: `1px solid ${theme.tableBorder}`,
+                marginTop: 10,
+              }}
+            >
+              {data.graphData
+                .filter(d => d.isProjection)
+                .map((d, i) => {
+                  const projectionIdx = i + 1;
+                  const isOverridden =
+                    useManualIncome &&
+                    manualIncomeOverrides[projectionIdx] != null;
+                  return (
+                    <View
+                      key={d.x}
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '10px 0',
+                        borderBottom: `1px solid ${theme.tableBorder}`,
+                      }}
+                    >
+                      <View style={{ flex: 1, fontWeight: 'bold' }}>
+                        {monthUtils.format(
+                          monthUtils.monthFromDate(d.date),
+                          'MMMM yyyy',
+                        )}
+                      </View>
+                      <View style={{ flex: 1, textAlign: 'right' }}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'flex-end',
+                            alignItems: 'center',
+                            color: theme.noticeText,
+                          }}
+                        >
+                          <span style={{ marginRight: 5 }}>Income:</span>
+                          {useManualIncome ? (
+                            <ManualIncomeInput
+                              value={d.income || 0}
+                              isOverridden={isOverridden}
+                              onUpdate={amount => {
+                                if (amount === null) {
+                                  setManualIncomeOverrides(prev => {
+                                    const next = { ...prev };
+                                    delete next[projectionIdx];
+                                    return next;
+                                  });
+                                } else {
+                                  setManualIncomeOverrides(prev => ({
+                                    ...prev,
+                                    [projectionIdx]: amount,
+                                  }));
+                                }
+                              }}
+                            />
+                          ) : (
+                            format(d.income || 0, 'financial')
+                          )}
+                        </View>
+                        <View style={{ color: theme.errorText, marginTop: 5 }}>
+                          Expenses: {format(d.expenses || 0, 'financial')}
+                        </View>
+                        <View style={{ fontWeight: 'bold', marginTop: 5 }}>
+                          Change: {format(d.change || 0, 'financial')}
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+            </View>
+          </View>
         </View>
       </View>
     </Page>
+  );
+}
+
+function ManualIncomeInput({
+  value,
+  onUpdate,
+  isOverridden,
+}: {
+  value: number;
+  onUpdate: (val: number | null) => void;
+  isOverridden: boolean;
+}) {
+  const [localValue, setLocalValue] = useState(
+    (value / 100).toFixed(2).replace(/\.00$/, ''),
+  );
+
+  useEffect(() => {
+    setLocalValue((value / 100).toFixed(2).replace(/\.00$/, ''));
+  }, [value]);
+
+  return (
+    <Input
+      value={localValue}
+      style={{
+        width: 100,
+        textAlign: 'right',
+        fontWeight: isOverridden ? 'bold' : 'normal',
+        color: isOverridden ? theme.noticeTextLight : theme.noticeText,
+      }}
+      onChangeValue={setLocalValue}
+      onBlur={() => {
+        if (localValue.trim() === '') {
+          onUpdate(null);
+          return;
+        }
+        const amount = Math.round(parseFloat(localValue) * 100);
+        if (!isNaN(amount)) {
+          onUpdate(amount);
+        }
+      }}
+    />
   );
 }
 

@@ -18,6 +18,7 @@ export function summarySpreadsheet(
   conditionsOp: 'and' | 'or' = 'and',
   summaryContent: SummaryContent,
   locale: Locale,
+  excludePartialMonths: boolean = false,
 ) {
   return async (
     spreadsheet: ReturnType<typeof useSpreadsheet>,
@@ -27,6 +28,8 @@ export function summarySpreadsheet(
       dividend: number;
       fromRange: string;
       toRange: string;
+      effectiveStart: string;
+      effectiveEnd: string;
     }) => void,
   ) => {
     let filters: unknown[] = [];
@@ -40,6 +43,9 @@ export function summarySpreadsheet(
     }
     const conditionsOpKey = conditionsOp === 'or' ? '$or' : '$and';
 
+    const currentMonth = monthUtils.currentMonth();
+    const today = monthUtils.currentDay();
+
     let startDay: Date;
     let endDay: Date;
     try {
@@ -49,14 +55,15 @@ export function summarySpreadsheet(
         new Date(),
       );
 
-      endDay = d.parse(
-        monthUtils.getMonth(end) ===
-          monthUtils.getMonth(monthUtils.currentDay())
-          ? monthUtils.currentDay()
-          : monthUtils.lastDayOfMonth(end),
-        'yyyy-MM-dd',
-        new Date(),
-      );
+      const isCurrentMonth = monthUtils.getMonth(end) === currentMonth;
+      const endDayStr =
+        isCurrentMonth && excludePartialMonths
+          ? monthUtils.lastDayOfMonth(monthUtils.prevMonth(currentMonth))
+          : isCurrentMonth
+            ? today
+            : monthUtils.lastDayOfMonth(end);
+
+      endDay = d.parse(endDayStr, 'yyyy-MM-dd', new Date());
     } catch (error) {
       console.error('Error parsing dates:', error);
       throw new Error('Invalid date format provided');
@@ -128,6 +135,8 @@ export function summarySpreadsheet(
     const dateRanges = {
       fromRange: d.format(startDay, 'MMM yy', { locale }),
       toRange: d.format(endDay, 'MMM yy', { locale }),
+      effectiveStart: d.format(startDay, 'yyyy-MM-dd'),
+      effectiveEnd: d.format(endDay, 'yyyy-MM-dd'),
     };
 
     switch (summaryContent.type) {

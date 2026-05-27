@@ -29,6 +29,7 @@ export function createSpreadsheet(
   interval: string = 'Monthly',
   firstDayOfWeekIdx: string = '0',
   format: (value: unknown, type?: FormatType) => string,
+  excludePartialMonths: boolean = false,
 ) {
   return async (
     spreadsheet: ReturnType<typeof useSpreadsheet>,
@@ -78,8 +79,11 @@ export function createSpreadsheet(
 
     // Start with the provided end-of-month date, then adjust for current context
     let endDate = monthUtils.lastDayOfMonth(end);
+    const todayMonth = monthUtils.currentMonth();
 
-    if (interval === 'Daily') {
+    if (excludePartialMonths && monthUtils.getMonth(end) === todayMonth) {
+      endDate = monthUtils.lastDayOfMonth(monthUtils.prevMonth(todayMonth));
+    } else if (interval === 'Daily') {
       const today = monthUtils.currentDay();
       if (monthUtils.isAfter(endDate, today)) {
         endDate = today;
@@ -178,6 +182,7 @@ export function createSpreadsheet(
         interval,
         firstDayOfWeekIdx,
         format,
+        excludePartialMonths,
       ),
     );
   };
@@ -196,6 +201,7 @@ function recalculate(
   interval: string = 'Monthly',
   firstDayOfWeekIdx: string = '0',
   format: (value: unknown, type?: FormatType) => string,
+  excludePartialMonths: boolean = false,
 ) {
   // Get intervals using the same pattern as other working spreadsheets
   const intervals =

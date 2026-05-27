@@ -89,8 +89,21 @@ export function FutureMoneyCard({
         accountIds,
         conditions,
         conditionsOp,
+        excludePartialMonths: meta?.excludePartialMonths ?? true,
+        useManualIncome: meta?.useManualIncome,
+        manualIncomeOverrides: meta?.manualIncomeOverrides,
       }),
-    [start, end, projectionMonths, accountIds, conditions, conditionsOp],
+    [
+      start,
+      end,
+      projectionMonths,
+      accountIds,
+      conditions,
+      conditionsOp,
+      meta?.excludePartialMonths,
+      meta?.useManualIncome,
+      meta?.manualIncomeOverrides,
+    ],
   );
 
   const data = useReport<FutureMoneyData>('future_money', params);
@@ -108,6 +121,12 @@ export function FutureMoneyCard({
       to={`/reports/future-money/${widgetId}`}
       menuItems={[
         { name: 'rename', text: t('Rename') },
+        {
+          name: 'toggle-partial-months',
+          text: (meta?.excludePartialMonths ?? true)
+            ? t('Include partial months')
+            : t('Exclude partial months'),
+        },
         { name: 'remove', text: t('Remove') },
         ...copyMenuItems,
       ]}
@@ -117,10 +136,16 @@ export function FutureMoneyCard({
           case 'rename':
             setNameMenuOpen(true);
             break;
+          case 'toggle-partial-months':
+            onMetaChange({
+              ...meta,
+              excludePartialMonths: !(meta?.excludePartialMonths ?? true),
+            });
+            break;
           case 'remove':
             onRemove();
             break;
-          default:
+default:
             throw new Error(`Unrecognized selection: ${item}`);
         }
       }}

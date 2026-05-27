@@ -61,6 +61,7 @@ import { BalanceForecastCard } from './reports/BalanceForecastCard';
 import { BudgetAnalysisCard } from './reports/BudgetAnalysisCard';
 import { CalendarCard } from './reports/CalendarCard';
 import { CashFlowCard } from './reports/CashFlowCard';
+import { ComparisonCard } from './reports/ComparisonCard';
 import { CrossoverCard } from './reports/CrossoverCard';
 import { CustomReportListCards } from './reports/CustomReportListCards';
 import { FormulaCard } from './reports/FormulaCard';
@@ -596,6 +597,10 @@ export function Overview({ dashboard }: OverviewProps) {
                               text: t('Net worth graph'),
                             },
                             {
+                              name: 'comparison-card' as const,
+                              text: t('Comparison card'),
+                            },
+                            {
                               name: 'crossover-card' as const,
                               text: t('Crossover point'),
                             },
@@ -829,6 +834,19 @@ export function Overview({ dashboard }: OverviewProps) {
                             widgetId={item.i}
                             isEditing={isEditing}
                             accounts={accounts}
+                            meta={widget.meta}
+                            onMetaChange={newMeta =>
+                              onMetaChange(item, newMeta)
+                            }
+                            onRemove={() => onRemoveWidget(item.i)}
+                            onCopy={targetDashboardId =>
+                              onCopyWidget(item.i, targetDashboardId)
+                            }
+                          />
+                        ) : widget.type === 'comparison-card' ? (
+                          <ComparisonCard
+                            widgetId={item.i}
+                            isEditing={isEditing}
                             meta={widget.meta}
                             onMetaChange={newMeta =>
                               onMetaChange(item, newMeta)

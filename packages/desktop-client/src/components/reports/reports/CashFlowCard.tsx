@@ -134,8 +134,15 @@ export function CashFlowCard({
   );
 
   const params = useMemo(
-    () => simpleCashFlow(start, end, meta?.conditions, meta?.conditionsOp),
-    [start, end, meta?.conditions, meta?.conditionsOp],
+    () =>
+      simpleCashFlow(
+        start,
+        end,
+        meta?.conditions,
+        meta?.conditionsOp,
+        meta?.excludePartialMonths ?? false,
+      ),
+    [start, end, meta?.conditions, meta?.conditionsOp, meta?.excludePartialMonths],
   );
   const data = useReport('cash_flow_simple', params);
 
@@ -158,6 +165,12 @@ export function CashFlowCard({
           text: t('Rename'),
         },
         {
+          name: 'toggle-partial-months',
+          text: meta?.excludePartialMonths
+            ? t('Include partial months')
+            : t('Exclude partial months'),
+        },
+        {
           name: 'remove',
           text: t('Remove'),
         },
@@ -168,6 +181,12 @@ export function CashFlowCard({
         switch (item) {
           case 'rename':
             setNameMenuOpen(true);
+            break;
+          case 'toggle-partial-months':
+            onMetaChange({
+              ...meta,
+              excludePartialMonths: !meta?.excludePartialMonths,
+            });
             break;
           case 'remove':
             onRemove();

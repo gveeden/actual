@@ -14,15 +14,19 @@ import { FinancialText } from '#components/FinancialText';
 import { indexCashFlow, runAll } from '#components/reports/util';
 import type { FormatType } from '#hooks/useFormat';
 import type { useSpreadsheet } from '#hooks/useSpreadsheet';
-
 export function simpleCashFlow(
   startMonth: string,
   endMonth: string,
   conditions: RuleConditionEntity[] = [],
   conditionsOp: 'and' | 'or' = 'and',
+  excludePartialMonths: boolean = false,
 ) {
   const start = monthUtils.firstDayOfMonth(startMonth);
-  const end = monthUtils.lastDayOfMonth(endMonth);
+  const currentMonth = monthUtils.currentMonth();
+  const end =
+    excludePartialMonths && monthUtils.getMonth(endMonth) === currentMonth
+      ? monthUtils.lastDayOfMonth(monthUtils.prevMonth(currentMonth))
+      : monthUtils.lastDayOfMonth(endMonth);
 
   return async (
     spreadsheet: ReturnType<typeof useSpreadsheet>,
@@ -70,7 +74,6 @@ export function simpleCashFlow(
     );
   };
 }
-
 export function cashFlowByDate(
   startMonth: string,
   endMonth: string,
@@ -79,9 +82,15 @@ export function cashFlowByDate(
   conditionsOp: 'and' | 'or',
   locale: Locale,
   format: (value: unknown, type?: FormatType) => string,
+  excludePartialMonths: boolean = false,
 ) {
   const start = monthUtils.firstDayOfMonth(startMonth);
-  const end = monthUtils.lastDayOfMonth(endMonth);
+  const currentMonth = monthUtils.currentMonth();
+  const end =
+    excludePartialMonths && monthUtils.getMonth(endMonth) === currentMonth
+      ? monthUtils.lastDayOfMonth(monthUtils.prevMonth(currentMonth))
+      : monthUtils.lastDayOfMonth(endMonth);
+
   const fixedEnd =
     end > monthUtils.currentDay() ? monthUtils.currentDay() : end;
 

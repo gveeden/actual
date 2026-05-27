@@ -44,6 +44,7 @@ export type NetWorthWidget = AbstractWidget<
     timeFrame?: TimeFrame;
     interval?: 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
     mode?: 'trend' | 'stacked';
+    excludePartialMonths?: boolean;
   } | null
 >;
 
@@ -55,6 +56,7 @@ export type CashFlowWidget = AbstractWidget<
     conditionsOp?: 'and' | 'or';
     timeFrame?: TimeFrame;
     showBalance?: boolean;
+    excludePartialMonths?: boolean;
   } | null
 >;
 
@@ -80,7 +82,11 @@ export type SpendingWidget = AbstractWidget<
     compareTo?: string;
     isLive?: boolean;
     mode?: 'single-month' | 'budget' | 'average';
+<<<<<<< HEAD
     averageRange?: SpendingAverageRange;
+=======
+    excludePartialMonths?: boolean;
+>>>>>>> 8c90e69a7 (Updated reporting features and working syncing)
   } | null
 >;
 export type BudgetAnalysisWidget = AbstractWidget<
@@ -93,6 +99,7 @@ export type BudgetAnalysisWidget = AbstractWidget<
     interval?: 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
     graphType?: 'Line' | 'Bar';
     showBalance?: boolean;
+    excludePartialMonths?: boolean;
   } | null
 >;
 export type CustomReportWidget = AbstractWidget<
@@ -142,6 +149,20 @@ export type FutureMoneyWidget = AbstractWidget<
     conditions?: RuleConditionEntity[];
     conditionsOp?: 'and' | 'or';
     timeFrame?: TimeFrame;
+    excludePartialMonths?: boolean;
+    useManualIncome?: boolean;
+    manualIncomeOverrides?: Record<number, number>;
+  } | null
+>;
+
+export type ComparisonWidget = AbstractWidget<
+  'comparison-card',
+  {
+    name?: string;
+    metric?: 'net_worth' | 'spending';
+    conditions?: RuleConditionEntity[];
+    conditionsOp?: 'and' | 'or';
+    timeFrame?: TimeFrame;
   } | null
 >;
 
@@ -158,8 +179,12 @@ type SpecializedWidget =
   | SankeyWidget
   | AgeOfMoneyWidget
 <<<<<<< HEAD
+<<<<<<< HEAD
   | BalanceForecastWidget;
 =======
+=======
+  | ComparisonWidget
+>>>>>>> 8c90e69a7 (Updated reporting features and working syncing)
   | FutureMoneyWidget;
 >>>>>>> 4547b60bc (Sanky edits)
 export type DashboardWidgetEntity = SpecializedWidget | CustomReportWidget;
@@ -195,6 +220,7 @@ export type SummaryWidget = AbstractWidget<
     conditionsOp?: 'and' | 'or';
     timeFrame?: TimeFrame;
     content?: string;
+    excludePartialMonths?: boolean;
   } | null
 >;
 
@@ -262,6 +288,7 @@ export type SankeyWidget = AbstractWidget<
     showAverage?: boolean;
     showAccounts?: boolean;
     showCarryForward?: boolean;
+    excludePartialMonths?: boolean;
   } | null
 >;
 
