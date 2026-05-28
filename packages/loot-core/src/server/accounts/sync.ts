@@ -761,6 +761,17 @@ export async function matchTransactions(
   reimportDeletedOverride?: boolean,
 ) {
   logger.log('Performing transaction reconciliation matching');
+  logger.log(
+    `Reconciling ${transactions?.length || 0} transactions for account ${acctId}. strictIdChecking: ${strictIdChecking}`,
+  );
+  logger.log('Raw transactions payload:', JSON.stringify(transactions?.map(t => ({
+    imported_id: t.transactionId || t.imported_id,
+    date: t.date,
+    amount: t.amount || (t.transactionAmount && t.transactionAmount.amount),
+    payeeName: t.payeeName,
+    cleared: t.cleared,
+    booked: t.booked
+  })), null, 2));
 
   const reimportDeleted =
     reimportDeletedOverride !== undefined
@@ -945,6 +956,13 @@ export async function matchTransactions(
     }
     return data;
   });
+
+  logger.log('matchTransactions results:', JSON.stringify({
+    step1StrictMatches: transactionsStep1.filter(t => t.match).map(t => ({ imported_id: t.trans.imported_id, match_id: t.match.id })),
+    step2FuzzyPayeeMatches: transactionsStep2.filter(t => t.match && !transactionsStep1.find(t1 => t1.trans.imported_id === t.trans.imported_id)?.match).map(t => ({ amount: t.trans.amount, date: t.trans.date, payee: t.trans.payee, match_id: t.match.id })),
+    step3FuzzyFallbackMatches: transactionsStep3.filter(t => t.match && !transactionsStep2.find(t2 => t2.trans.imported_id === t.trans.imported_id)?.match).map(t => ({ amount: t.trans.amount, date: t.trans.date, match_id: t.match.id })),
+    unmatched: transactionsStep3.filter(t => !t.match).map(t => ({ amount: t.trans.amount, date: t.trans.date, payee: t.trans.payee }))
+  }, null, 2));
 
   return {
     payeesToCreate,
@@ -1159,6 +1177,11 @@ async function processBankSyncDownload(
       true,
       updateDates,
     );
+
+    logger.log('processBankSyncDownload reconciliation result summary:', {
+      addedCount: result.added.length,
+      updatedCount: result.updated.length
+    });
 
     if (currentBalance != null) {
       await updateAccountBalance(id, currentBalance);

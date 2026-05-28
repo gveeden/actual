@@ -105,6 +105,10 @@ async function request<T>(
     throw new Error('Server not configured');
   }
 
+  logger.info(
+    `[v2] TrueLayer proxy request for connection ${connectionId || 'default'} to ${url}`,
+  );
+
   try {
     const result = await post(server.TRUELAYER_SERVER + '/proxy', {
       url,
@@ -113,12 +117,16 @@ async function request<T>(
       token: accessToken,
     });
 
+    logger.info(
+      `TrueLayer proxy request to ${url} returned: ${JSON.stringify(result)}`,
+    );
+
     return result as T;
   } catch (err: any) {
-    if (err?.status === 401 && !isRetry) {
-      // Token expired, attempt refresh
+    if ((err?.status === 401 || err?.status === 403) && !isRetry) {
+      // Token expired or access denied, attempt refresh
       logger.info(
-        `TrueLayer token expired for ${connectionId || 'default'}, attempting to refresh...`,
+        `TrueLayer request failed with status ${err.status} for ${connectionId || 'default'}, attempting to refresh token...`,
       );
       const newToken = await refreshTrueLayerToken(connectionId);
       if (newToken) {
@@ -446,7 +454,10 @@ export async function downloadTrueLayerTransactions(
         { method: 'GET' },
         token,
         connectionId,
-      ),
+      ).catch(err => {
+        logger.error(`TrueLayer balance request failed for card ${id}:`, err);
+        return { results: [] };
+      }),
     ]);
 
     if (transactions && Array.isArray((transactions as any).results)) {
@@ -463,7 +474,7 @@ export async function downloadTrueLayerTransactions(
     // Default to account
     const [transactions, balance] = await Promise.all([
       request<{ results: TrueLayerTransaction[] }>(
-        `${BASE_URL}/accounts/${id}/transactions${from ? `?from=${from}` : ''}`,
+        `${BASE_URL}/accounts/${id}/transactions?from=${from}`,
         { method: 'GET' },
         token,
         connectionId,
@@ -473,7 +484,10 @@ export async function downloadTrueLayerTransactions(
         { method: 'GET' },
         token,
         connectionId,
-      ),
+      ).catch(err => {
+        logger.error(`TrueLayer balance request failed for account ${id}:`, err);
+        return { results: [] };
+      }),
     ]);
 
     if (transactions && Array.isArray((transactions as any).results)) {
@@ -501,6 +515,10 @@ export async function downloadTrueLayerTransactions(
       booked: true,
     };
   });
+
+  logger.info(
+    `downloadTrueLayerTransactions: Fetched ${mappedTransactions.length} transactions for account ${id} starting from ${from}. Current Balance: ${currentBalance}`,
+  );
 
   return {
     transactions: mappedTransactions,

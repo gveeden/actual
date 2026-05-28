@@ -8,13 +8,13 @@ import { PostError } from './errors';
 function throwIfNot200(res: Response, text: string) {
   if (res.status !== 200) {
     if (res.status === 500) {
-      throw new PostError(res.status === 500 ? 'internal' : text);
+      throw new PostError(res.status === 500 ? 'internal' : text, undefined, res.status);
     }
 
     const contentType = res.headers.get('Content-Type') ?? '';
     if (contentType.toLowerCase().indexOf('application/json') !== -1) {
       const json = JSON.parse(text);
-      throw new PostError(json.reason);
+      throw new PostError(json.reason, undefined, res.status);
     }
 
     // Actual Sync Server may be exposed via a tunnel (e.g. ngrok). Tunnel errors should be treated as network errors.
@@ -26,10 +26,10 @@ function throwIfNot200(res: Response, text: string) {
     if (tunnelError) {
       // Tunnel errors are present when the tunnel is active and the server is not reachable e.g. server is offline
       // When we experience a tunnel error we treat it as a network failure
-      throw new PostError('network-failure');
+      throw new PostError('network-failure', undefined, res.status);
     }
 
-    throw new PostError(text);
+    throw new PostError(text, undefined, res.status);
   }
 }
 
@@ -103,11 +103,13 @@ export async function post(
         '\nData: ' +
         JSON.stringify(data, null, 2) +
         '\nResponse: ' +
-        JSON.stringify(res, null, 2),
+        JSON.stringify(responseData, null, 2),
     );
 
     throw new PostError(
       responseData.description || responseData.reason || 'unknown',
+      undefined,
+      responseData.status_code || responseData.status,
     );
   }
 

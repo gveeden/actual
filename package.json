@@ -108,6 +108,7 @@
     "glob-hasher-linux-arm64-gnu": "1.4.2"
   },
   "resolutions": {
+    "recharts": "patch:recharts@npm%3A3.8.1#~/.yarn/patches/recharts-npm-3.8.1-9f57b72cb4.patch",
     "adm-zip": "patch:adm-zip@npm%3A0.5.16#~/.yarn/patches/adm-zip-npm-0.5.16-4556fea098.patch",
     "minimatch@3.1.2": "3.1.5",
     "serialize-javascript": "^7.0.5",

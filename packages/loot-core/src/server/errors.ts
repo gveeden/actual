@@ -2,13 +2,15 @@
 export class PostError extends Error {
   meta: { meta: string } | undefined;
   reason: string;
+  status: number | undefined;
   type: 'PostError';
 
-  constructor(reason: string, meta?: { meta: string }) {
+  constructor(reason: string, meta?: { meta: string }, status?: number) {
     super('PostError: ' + reason);
     this.type = 'PostError';
     this.reason = reason;
     this.meta = meta;
+    this.status = status;
   }
 }
 

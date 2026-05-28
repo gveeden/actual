@@ -197,7 +197,7 @@
     "react-spring": "^10.0.3",
     "react-swipeable": "^7.0.2",
     "react-virtualized-auto-sizer": "^2.0.3",
-    "recharts": "^3.8.1",
+    "recharts": "patch:recharts@npm%3A3.8.1#~/.yarn/patches/recharts-npm-3.8.1-9f57b72cb4.patch",
     "rehype-external-links": "^3.0.0",
     "remark-gfm": "^4.0.1",
     "rolldown": "^1.0.0-rc.13",

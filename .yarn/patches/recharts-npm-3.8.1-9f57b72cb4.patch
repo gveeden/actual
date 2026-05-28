@@ -1,0 +1,244 @@
+diff --git a/es6/cartesian/Brush.js b/es6/cartesian/Brush.js
+index a9f9a69739963f40008567c696898473214fa5b4..b5124157dd9e55d34517f2cd662313e50b8c8cc8 100644
+--- a/es6/cartesian/Brush.js
++++ b/es6/cartesian/Brush.js
+@@ -8,7 +8,7 @@ import * as React from 'react';
+ import { Children, PureComponent, useCallback, useContext, useEffect } from 'react';
+ import { clsx } from 'clsx';
+ import { scalePoint } from 'victory-vendor/d3-scale';
+-import range from 'es-toolkit/compat/range';
++import { range } from 'es-toolkit/compat';
+ import { Layer } from '../container/Layer';
+ import { Text } from '../component/Text';
+ import { getValueByDataKey } from '../util/ChartUtils';
+diff --git a/es6/cartesian/CartesianAxis.js b/es6/cartesian/CartesianAxis.js
+index 583562beb7fcca27300d85321536b52a73758738..70a745fd8e6e2eb208d519d999a71e6656878f88 100644
+--- a/es6/cartesian/CartesianAxis.js
++++ b/es6/cartesian/CartesianAxis.js
+@@ -12,7 +12,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e =
+  */
+ import * as React from 'react';
+ import { useState, useRef, useCallback, forwardRef, useImperativeHandle, useEffect } from 'react';
+-import get from 'es-toolkit/compat/get';
++import { get } from 'es-toolkit/compat';
+ import { clsx } from 'clsx';
+ import { Layer } from '../container/Layer';
+ import { Text, isValidTextAnchor } from '../component/Text';
+diff --git a/es6/cartesian/Funnel.js b/es6/cartesian/Funnel.js
+index aa7e0b7a1ca41d8ece13741edd212f726b0d406f..8ed69fda20661f048d44970a518a3ea706d82f64 100644
+--- a/es6/cartesian/Funnel.js
++++ b/es6/cartesian/Funnel.js
+@@ -12,7 +12,7 @@ function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol"
+ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+ import * as React from 'react';
+ import { useCallback, useMemo, useRef, useState } from 'react';
+-import omit from 'es-toolkit/compat/omit';
++import { omit } from 'es-toolkit/compat';
+ import { clsx } from 'clsx';
+ import { selectActiveIndex } from '../state/selectors/selectors';
+ import { useAppSelector } from '../state/hooks';
+diff --git a/es6/chart/Sankey.js b/es6/chart/Sankey.js
+index c2e1dcda1f8592e8efee4cfe438a83bd6dc794c5..029f28071f8f08ba12fe70d22bffa62ad8fc896f 100644
+--- a/es6/chart/Sankey.js
++++ b/es6/chart/Sankey.js
+@@ -10,9 +10,9 @@ function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol"
+ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+ import * as React from 'react';
+ import { useCallback, useMemo, useState } from 'react';
+-import maxBy from 'es-toolkit/compat/maxBy';
+-import sumBy from 'es-toolkit/compat/sumBy';
+-import get from 'es-toolkit/compat/get';
++import { maxBy } from 'es-toolkit/compat';
++import { sumBy } from 'es-toolkit/compat';
++import { get } from 'es-toolkit/compat';
+ import { Surface } from '../container/Surface';
+ import { Layer } from '../container/Layer';
+ import { Rectangle } from '../shape/Rectangle';
+diff --git a/es6/chart/SunburstChart.js b/es6/chart/SunburstChart.js
+index 541c2262a30a2451daca451c75d7ecf728090497..8f2643315637606780a8bd72bc56192578126009 100644
+--- a/es6/chart/SunburstChart.js
++++ b/es6/chart/SunburstChart.js
+@@ -8,7 +8,7 @@ import * as React from 'react';
+ import { useState } from 'react';
+ import { scaleLinear } from 'victory-vendor/d3-scale';
+ import { clsx } from 'clsx';
+-import get from 'es-toolkit/compat/get';
++import { get } from 'es-toolkit/compat';
+ import { Surface } from '../container/Surface';
+ import { Layer } from '../container/Layer';
+ import { Sector } from '../shape/Sector';
+diff --git a/es6/chart/Treemap.js b/es6/chart/Treemap.js
+index 70706d47cade4afbaa44970f55aa48a136e995e7..0a47389a91a97ec54a00f05d66e7577c7ea1cb38 100644
+--- a/es6/chart/Treemap.js
++++ b/es6/chart/Treemap.js
+@@ -9,8 +9,8 @@ function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol"
+ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+ import * as React from 'react';
+ import { PureComponent, useCallback, useState } from 'react';
+-import omit from 'es-toolkit/compat/omit';
+-import get from 'es-toolkit/compat/get';
++import { omit } from 'es-toolkit/compat';
++import { get } from 'es-toolkit/compat';
+ import { Layer } from '../container/Layer';
+ import { Surface } from '../container/Surface';
+ import { Polygon } from '../shape/Polygon';
+diff --git a/es6/component/DefaultTooltipContent.js b/es6/component/DefaultTooltipContent.js
+index 278e7495cd03f5d570caabd39fd1262346d94ca2..069cec7d039f04fc77c54644127a149bd3a275ce 100644
+--- a/es6/component/DefaultTooltipContent.js
++++ b/es6/component/DefaultTooltipContent.js
+@@ -9,7 +9,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e =
+  */
+ 
+ import * as React from 'react';
+-import sortBy from 'es-toolkit/compat/sortBy';
++import { sortBy } from 'es-toolkit/compat';
+ import { clsx } from 'clsx';
+ import { isNullish, isNumOrStr } from '../util/DataUtils';
+ function defaultFormatter(value) {
+diff --git a/es6/component/ResponsiveContainer.js b/es6/component/ResponsiveContainer.js
+index 2b4e117b49042286a8f19e8320b81641ff8a3f42..278f375c0f146614536aa4dac9d5af6f927ce468 100644
+--- a/es6/component/ResponsiveContainer.js
++++ b/es6/component/ResponsiveContainer.js
+@@ -7,7 +7,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e =
+ import { clsx } from 'clsx';
+ import * as React from 'react';
+ import { createContext, forwardRef, useCallback, useContext, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+-import throttle from 'es-toolkit/compat/throttle';
++import { throttle } from 'es-toolkit/compat';
+ import { isNumber, noop } from '../util/DataUtils';
+ import { warn } from '../util/LogUtils';
+ import { calculateChartDimensions, defaultResponsiveContainerProps, getDefaultWidthAndHeight, getInnerDivStyle } from './responsiveContainerUtils';
+diff --git a/es6/polar/Pie.js b/es6/polar/Pie.js
+index 026b08045eb9aea7452cf9b9bffb62cd7ef17160..4b1afb0ed5ce106518be20db254d2499e3492612 100644
+--- a/es6/polar/Pie.js
++++ b/es6/polar/Pie.js
+@@ -12,7 +12,7 @@ function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol"
+ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+ import * as React from 'react';
+ import { useCallback, useMemo, useRef, useState } from 'react';
+-import get from 'es-toolkit/compat/get';
++import { get } from 'es-toolkit/compat';
+ import { clsx } from 'clsx';
+ import { selectPieLegend, selectPieSectors } from '../state/selectors/pieSelectors';
+ import { useAppSelector } from '../state/hooks';
+diff --git a/es6/polar/PolarRadiusAxis.js b/es6/polar/PolarRadiusAxis.js
+index ff73f5802f85b51c865bdba322984ac818ef71e2..cf2ac39eb01d787a65637b7ab0083aa90511fcc6 100644
+--- a/es6/polar/PolarRadiusAxis.js
++++ b/es6/polar/PolarRadiusAxis.js
+@@ -11,8 +11,8 @@ function _objectWithoutProperties(e, t) { if (null == e) return {}; var o, r, i
+ function _objectWithoutPropertiesLoose(r, e) { if (null == r) return {}; var t = {}; for (var n in r) if ({}.hasOwnProperty.call(r, n)) { if (-1 !== e.indexOf(n)) continue; t[n] = r[n]; } return t; }
+ import * as React from 'react';
+ import { useEffect, useMemo } from 'react';
+-import maxBy from 'es-toolkit/compat/maxBy';
+-import minBy from 'es-toolkit/compat/minBy';
++import { maxBy } from 'es-toolkit/compat';
++import { minBy } from 'es-toolkit/compat';
+ import { clsx } from 'clsx';
+ import { Text } from '../component/Text';
+ import { PolarLabelContextProvider, PolarLabelFromLabelProp } from '../component/Label';
+diff --git a/es6/polar/Radar.js b/es6/polar/Radar.js
+index 756683d0942e31ba0378ca9d5e11314d15e322dc..153ae00da4f07281c29856ea567ba2ea553b439d 100644
+--- a/es6/polar/Radar.js
++++ b/es6/polar/Radar.js
+@@ -9,7 +9,7 @@ function _objectWithoutProperties(e, t) { if (null == e) return {}; var o, r, i
+ function _objectWithoutPropertiesLoose(r, e) { if (null == r) return {}; var t = {}; for (var n in r) if ({}.hasOwnProperty.call(r, n)) { if (-1 !== e.indexOf(n)) continue; t[n] = r[n]; } return t; }
+ import * as React from 'react';
+ import { useCallback, useRef, useState } from 'react';
+-import last from 'es-toolkit/compat/last';
++import { last } from 'es-toolkit/compat';
+ import { clsx } from 'clsx';
+ import { interpolate, isNullish, noop } from '../util/DataUtils';
+ import { polarToCartesian } from '../util/PolarUtils';
+diff --git a/es6/state/selectors/axisSelectors.js b/es6/state/selectors/axisSelectors.js
+index 97d7f4e96cfd623aafb47a8dc66d36c7e331c79c..82c2669f385b2e2af67081b00e190debd63d39e0 100644
+--- a/es6/state/selectors/axisSelectors.js
++++ b/es6/state/selectors/axisSelectors.js
+@@ -4,7 +4,7 @@ function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object
+ function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
+ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+ import { createSelector } from 'reselect';
+-import range from 'es-toolkit/compat/range';
++import { range } from 'es-toolkit/compat';
+ import { selectChartLayout } from '../../context/chartLayoutContext';
+ import { getDomainOfStackGroups, getStackedData, getValueByDataKey, isCategoricalAxis } from '../../util/ChartUtils';
+ import { selectChartDataWithIndexes, selectChartDataWithIndexesIfNotInPanoramaPosition4, selectChartDataSliceIfNotInPanorama } from './dataSelectors';
+diff --git a/es6/state/selectors/legendSelectors.js b/es6/state/selectors/legendSelectors.js
+index ab9074490d5475099a306c6c70c3a863985caf6e..3dad8ce9a5ef686ff9a28d7bad98988df07dbf80 100644
+--- a/es6/state/selectors/legendSelectors.js
++++ b/es6/state/selectors/legendSelectors.js
+@@ -1,5 +1,5 @@
+ import { createSelector } from 'reselect';
+-import sortBy from 'es-toolkit/compat/sortBy';
++import { sortBy } from 'es-toolkit/compat';
+ export var selectLegendSettings = state => state.legend.settings;
+ export var selectLegendSize = state => state.legend.size;
+ var selectAllLegendPayload2DArray = state => state.legend.payload;
+diff --git a/es6/state/selectors/selectors.js b/es6/state/selectors/selectors.js
+index f23685a1751faa3e08e6110b9501b474e03dfaa8..173500af52e465935adddaa58ef55af6b18fdc36 100644
+--- a/es6/state/selectors/selectors.js
++++ b/es6/state/selectors/selectors.js
+@@ -1,5 +1,5 @@
+ import { createSelector } from 'reselect';
+-import sortBy from 'es-toolkit/compat/sortBy';
++import { sortBy } from 'es-toolkit/compat';
+ import { useAppSelector } from '../hooks';
+ import { calculateCartesianTooltipPos, calculatePolarTooltipPos } from '../../util/ChartUtils';
+ import { selectChartDataWithIndexes } from './dataSelectors';
+diff --git a/es6/util/ActiveShapeUtils.js b/es6/util/ActiveShapeUtils.js
+index 1b05c3cee7b3891c67d9d8f734eecce5c50a83a1..4b2f32e543c7875bb52ef24b65620857ac93e54a 100644
+--- a/es6/util/ActiveShapeUtils.js
++++ b/es6/util/ActiveShapeUtils.js
+@@ -8,7 +8,7 @@ function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol"
+ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+ import * as React from 'react';
+ import { cloneElement, isValidElement } from 'react';
+-import isPlainObject from 'es-toolkit/compat/isPlainObject';
++import { isPlainObject } from 'es-toolkit/compat';
+ import { Rectangle } from '../shape/Rectangle';
+ import { Trapezoid } from '../shape/Trapezoid';
+ import { Sector } from '../shape/Sector';
+diff --git a/es6/util/ChartUtils.js b/es6/util/ChartUtils.js
+index cc6eb347a83ae1216e000ebd2a9c1757442bdadc..3dbbaef3808fed2251a699a39bd0f3da0f929824 100644
+--- a/es6/util/ChartUtils.js
++++ b/es6/util/ChartUtils.js
+@@ -3,8 +3,8 @@ function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t =
+ function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+ function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
+ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+-import sortBy from 'es-toolkit/compat/sortBy';
+-import get from 'es-toolkit/compat/get';
++import { sortBy } from 'es-toolkit/compat';
++import { get } from 'es-toolkit/compat';
+ import { stack as shapeStack, stackOffsetExpand, stackOffsetNone, stackOffsetSilhouette, stackOffsetWiggle, stackOrderNone } from 'victory-vendor/d3-shape';
+ import { findEntryInArray, isNan, isNotNil, isNullish, isNumber, isNumOrStr, mathSign } from './DataUtils';
+ import { getSliced } from './getSliced';
+diff --git a/es6/util/DataUtils.js b/es6/util/DataUtils.js
+index cf8d44a068aa71919688b16ad5954627f8b147fe..3576d645d06a95d6abb1ad3afc7ee6906f0b46db 100644
+--- a/es6/util/DataUtils.js
++++ b/es6/util/DataUtils.js
+@@ -1,4 +1,4 @@
+-import get from 'es-toolkit/compat/get';
++import { get } from 'es-toolkit/compat';
+ import { round } from './round';
+ export var mathSign = value => {
+   if (value === 0) {
+diff --git a/es6/util/ReactUtils.js b/es6/util/ReactUtils.js
+index 495eb760fa9d635b3843a37cb467a83d1175432f..40ad7af88ae471b122b920c55ef2039d00653095 100644
+--- a/es6/util/ReactUtils.js
++++ b/es6/util/ReactUtils.js
+@@ -1,4 +1,4 @@
+-import get from 'es-toolkit/compat/get';
++import { get } from 'es-toolkit/compat';
+ import { Children } from 'react';
+ import { isFragment } from 'react-is';
+ import { isNullish } from './DataUtils';
+diff --git a/es6/util/payload/getUniqPayload.js b/es6/util/payload/getUniqPayload.js
+index 93992a462cfd2f9b9e5aa2067174801911681393..19de0962cfdf0f8eff2fb13093d10466b71fd783 100644
+--- a/es6/util/payload/getUniqPayload.js
++++ b/es6/util/payload/getUniqPayload.js
+@@ -1,4 +1,4 @@
+-import uniqBy from 'es-toolkit/compat/uniqBy';
++import { uniqBy } from 'es-toolkit/compat';
+ 
+ /**
+  * This is configuration option that decides how to filter for unique values only:
