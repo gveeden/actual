@@ -10,6 +10,7 @@ import type {
   SyncServerGoCardlessAccount,
   SyncServerPluggyAiAccount,
   SyncServerSimpleFinAccount,
+  SyncServerTrueLayerAccount,
   TransactionEntity,
 } from '@actual-app/core/types/models';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -459,6 +460,48 @@ export function useLinkAccountSimpleFinMutation() {
   });
 }
 
+type LinkAccountTrueLayerPayload = LinkAccountBasePayload & {
+  account: SyncServerTrueLayerAccount;
+};
+
+export function useLinkAccountTrueLayerMutation() {
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: async ({
+      account,
+      upgradingId,
+      offBudget,
+      startingDate,
+      startingBalance,
+    }: LinkAccountTrueLayerPayload) => {
+      await send('truelayer-accounts-link', {
+        account,
+        upgradingId,
+        offBudget,
+        startingDate,
+        startingBalance,
+      });
+    },
+    onSuccess: () => {
+      invalidateQueries(queryClient);
+      invalidateQueries(queryClient, payeeQueries.lists());
+    },
+    onError: error => {
+      console.error('Error linking account to TrueLayer:', error);
+      dispatchErrorNotification(
+        dispatch,
+        t(
+          'There was an error linking the account to TrueLayer. Please try again.',
+        ),
+        error,
+      );
+    },
+  });
+}
+
 type LinkAccountPluggyAiPayload = LinkAccountBasePayload & {
   externalAccount: SyncServerPluggyAiAccount;
 };
@@ -673,6 +716,39 @@ export function useSyncAccountsMutation() {
 
         accountIdsToSync = accountIdsToSync.filter(
           id => !simpleFinAccounts.find(sfa => sfa.id === id),
+        );
+
+        dispatch(setAccountsSyncing({ ids: accountIdsToSync }));
+      }
+
+      const trueLayerAccounts = accounts.filter(
+        a =>
+          a.account_sync_source === 'trueLayer' &&
+          accountIdsToSync.includes(a.id),
+      );
+
+      if (trueLayerAccounts.length > 0) {
+        console.log('Using TrueLayer batch sync');
+
+        const res = await send('truelayer-batch-sync', {
+          ids: trueLayerAccounts.map(a => a.id),
+        });
+
+        for (const account of res) {
+          const success = handleSyncResponse(
+            account.accountId,
+            account.res,
+            dispatch,
+            queryClient,
+            newTransactions,
+            matchedTransactions,
+            updatedAccounts,
+          );
+          if (success) isSyncSuccess = true;
+        }
+
+        accountIdsToSync = accountIdsToSync.filter(
+          id => !trueLayerAccounts.find(tla => tla.id === id),
         );
 
         dispatch(setAccountsSyncing({ ids: accountIdsToSync }));

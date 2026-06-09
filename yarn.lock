@@ -16936,9 +16936,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob-hasher-linux-arm64-gnu@npm:1.4.2":
+"glob-hasher-linux-arm64-gnu@npm:*, glob-hasher-linux-arm64-gnu@npm:1.4.2":
   version: 1.4.2
   resolution: "glob-hasher-linux-arm64-gnu@npm:1.4.2"
+  checksum: 10/095332b8a296d3bf2402451d18594a6be0cc0e921ea0e928a49c9678db61bc849a223c80ebd7ba11fb81a491218d994fb9ddab7ee838810b8321dfd9b24b9505
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard

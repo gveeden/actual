@@ -34,12 +34,14 @@ import type {
   SyncServerGoCardlessAccount,
   SyncServerPluggyAiAccount,
   SyncServerSimpleFinAccount,
+  SyncServerTrueLayerAccount,
   TransactionEntity,
 } from '#types/models';
 
 import * as link from './link';
 import { getStartingBalancePayee } from './payees';
 import * as bankSync from './sync';
+import * as truelayer from './truelayer';
 
 // Shared base type for link account parameters
 type LinkAccountBaseParams = {
@@ -56,6 +58,7 @@ export type AccountHandlers = {
   'account-properties': typeof getAccountProperties;
   'gocardless-accounts-link': typeof linkGoCardlessAccount;
   'simplefin-accounts-link': typeof linkSimpleFinAccount;
+  'truelayer-accounts-link': typeof linkTrueLayerAccount;
   'pluggyai-accounts-link': typeof linkPluggyAiAccount;
   'akahu-accounts-link': typeof linkAkahuAccount;
   'enablebanking-accounts-link': typeof linkEnableBankingAccount;
@@ -69,6 +72,8 @@ export type AccountHandlers = {
   'gocardless-poll-web-token-stop': typeof stopGoCardlessWebTokenPolling;
   'gocardless-status': typeof goCardlessStatus;
   'simplefin-status': typeof simpleFinStatus;
+  'truelayer-status': typeof trueLayerStatus;
+  'truelayer-auth-status': typeof trueLayerAuthStatus;
   'pluggyai-status': typeof pluggyAiStatus;
   'akahu-status': typeof akahuStatus;
   'enablebanking-status': typeof enableBankingStatus;
@@ -78,13 +83,18 @@ export type AccountHandlers = {
   'enablebanking-poll-auth': typeof enableBankingPollAuth;
   'enablebanking-poll-auth-stop': typeof stopEnableBankingPollAuth;
   'enablebanking-configure': typeof enableBankingConfigure;
+  'truelayer-complete-auth': typeof trueLayerCompleteAuth;
   'simplefin-accounts': typeof simpleFinAccounts;
+  'truelayer-accounts': typeof trueLayerAccounts;
   'pluggyai-accounts': typeof pluggyAiAccounts;
   'akahu-accounts': typeof akahuAccounts;
   'gocardless-get-banks': typeof getGoCardlessBanks;
   'gocardless-create-web-token': typeof createGoCardlessWebToken;
   'accounts-bank-sync': typeof accountsBankSync;
   'simplefin-batch-sync': typeof simpleFinBatchSync;
+  'truelayer-batch-sync': typeof trueLayerBatchSync;
+  'truelayer-disconnect': typeof trueLayerDisconnect;
+  'truelayer-get-connections': typeof trueLayerGetConnections;
   'transactions-import': typeof importTransactions;
   'account-unlink': typeof unlinkAccount;
 };
@@ -1124,6 +1134,89 @@ async function enableBankingCompleteAuth({
   );
 }
 
+async function trueLayerCompleteAuth({
+  code,
+  redirectUri,
+}: {
+  code: string;
+  redirectUri: string;
+}) {
+  logger.info('Starting TrueLayer token exchange...', { redirectUri });
+  const clientIdRow = await db.first<{ value: string }>(
+    "SELECT value FROM preferences WHERE id = 'truelayer-client-id'",
+  );
+  const clientSecretRow = await db.first<{ value: string }>(
+    "SELECT value FROM preferences WHERE id = 'truelayer-client-secret'",
+  );
+
+  const clientId = clientIdRow?.value;
+  const clientSecret = clientSecretRow?.value;
+
+  if (!clientId || !clientSecret) {
+    logger.error('TrueLayer credentials missing in DB');
+    return { error: { message: 'TrueLayer credentials not configured.' } };
+  }
+
+  try {
+    const server = getServer();
+    if (!server) {
+      throw new Error('Server not configured');
+    }
+
+    logger.info('Forwarding TrueLayer exchange to server...');
+    const data = (await post(server.TRUELAYER_SERVER + '/exchange', {
+      code,
+      redirectUri,
+      clientId,
+      clientSecret,
+    })) as { access_token: string; refresh_token: string; expires_in: number };
+
+    if (!data) {
+      throw new Error('Failed to exchange TrueLayer tokens');
+    }
+
+    const { access_token, refresh_token, expires_in } = data;
+    const expiresAt = Date.now() + expires_in * 1000;
+
+    // Use /me endpoint to get credentials_id as connectionId
+    const meRes = (await post(server.TRUELAYER_SERVER + '/proxy', {
+      url: 'https://api.truelayer.com/data/v1/me',
+      method: 'GET',
+      token: access_token,
+    })) as { results: { credentials_id: string }[] };
+
+    if (!meRes?.results?.[0]) {
+      throw new Error('Failed to fetch TrueLayer identity');
+    }
+
+    const connectionId = meRes.results[0].credentials_id;
+    const suffix = truelayer.getPrefSuffix(connectionId);
+
+    await db.run(
+      `INSERT OR REPLACE INTO preferences (id, value) VALUES ('truelayer-access-token${suffix}', ?)`,
+      [access_token],
+    );
+    await db.run(
+      `INSERT OR REPLACE INTO preferences (id, value) VALUES ('truelayer-refresh-token${suffix}', ?)`,
+      [refresh_token],
+    );
+    await db.run(
+      `INSERT OR REPLACE INTO preferences (id, value) VALUES ('truelayer-expires-at${suffix}', ?)`,
+      [expiresAt.toString()],
+    );
+
+    await truelayer.addConnection(connectionId);
+
+    logger.info(`TrueLayer tokens saved successfully for ${connectionId}`);
+    return {};
+  } catch (err) {
+    logger.error('TrueLayer auth exchange failed:', err);
+    return {
+      error: { message: err instanceof Error ? err.message : String(err) },
+    };
+  }
+}
+
 const enableBankingPollControllers = new Map<string, AbortController>();
 
 async function enableBankingPollAuth({ state }: { state: string }) {
@@ -1530,7 +1623,7 @@ async function simpleFinBatchSync({
         errors.push(handleSyncError(bankSyncError, account));
       } else if (syncResponse.res) {
         const syncResponseData = await handleSyncResponse(
-          syncResponse.res,
+          syncResponse.res as { added: string[]; updated: string[] },
           account.id,
         );
 
@@ -1574,6 +1667,120 @@ async function simpleFinBatchSync({
   }
 
   logger.groupEnd();
+
+  return retVal;
+}
+
+async function trueLayerBatchSync({
+  ids = [],
+}: {
+  ids: Array<AccountEntity['id']>;
+}): Promise<
+  Array<{ accountId: AccountEntity['id']; res: SyncResponseWithErrors }>
+> {
+  const accounts = db.runQuery<db.DbAccount & { bankId: db.DbBank['bank_id'] }>(
+    `SELECT a.*, b.bank_id as bankId FROM accounts a
+         LEFT JOIN banks b ON a.bank = b.id
+         WHERE
+          a.tombstone = 0
+          AND a.closed = 0
+          AND a.account_sync_source = 'trueLayer'
+          ${ids.length ? `AND a.id IN (${ids.map(() => '?').join(', ')})` : ''}
+         ORDER BY a.offbudget, a.sort_order`,
+    ids.length ? ids : [],
+    true,
+  );
+
+  const retVal: Array<{
+    accountId: AccountEntity['id'];
+    res: {
+      errors: ReturnType<typeof handleSyncError>[];
+      newTransactions: Array<TransactionEntity['id']>;
+      matchedTransactions: Array<TransactionEntity['id']>;
+      updatedAccounts: Array<AccountEntity['id']>;
+    };
+  }> = [];
+
+  logger.group('Bank Sync operation for all TrueLayer accounts');
+  try {
+    const syncResponses: Array<{
+      accountId: AccountEntity['id'];
+      res: {
+        error_code?: string;
+        error_type?: string;
+        added?: Array<TransactionEntity['id']>;
+        updated?: Array<TransactionEntity['id']>;
+      };
+    }> = await bankSync.trueLayerBatchSync(
+      accounts.map(a => ({
+        id: a.id,
+        account_id: a.account_id || null,
+      })),
+    );
+    for (const syncResponse of syncResponses) {
+      const account = accounts.find(a => a.id === syncResponse.accountId);
+      if (!account) {
+        logger.error(
+          `Invalid account ID found in response: ${syncResponse.accountId}. Proceeding to the next account...`,
+        );
+        continue;
+      }
+
+      const errors: ReturnType<typeof handleSyncError>[] = [];
+      const newTransactions: Array<TransactionEntity['id']> = [];
+      const matchedTransactions: Array<TransactionEntity['id']> = [];
+      const updatedAccounts: Array<AccountEntity['id']> = [];
+
+      if (syncResponse.res?.error_code) {
+        errors.push(
+          handleSyncError(
+            {
+              type: 'BankSyncError',
+              reason: 'Failed syncing account "' + account.name + '."',
+              category: syncResponse.res.error_type,
+              code: syncResponse.res.error_code,
+            } as BankSyncError,
+            account,
+          ),
+        );
+      } else if (syncResponse.res) {
+        const syncResponseData = await handleSyncResponse(
+          syncResponse.res as { added: string[]; updated: string[] },
+          account.id,
+        );
+        newTransactions.push(...syncResponseData.newTransactions);
+        matchedTransactions.push(...syncResponseData.matchedTransactions);
+        updatedAccounts.push(...syncResponseData.updatedAccounts);
+      } else {
+        errors.push(
+          handleSyncError(
+            new Error(
+              'Failed syncing account "' + account.name + '": empty response',
+            ),
+            account,
+          ),
+        );
+      }
+
+      retVal.push({
+        accountId: account.id,
+        res: { errors, newTransactions, matchedTransactions, updatedAccounts },
+      });
+    }
+  } catch (err) {
+    const error = err as Error;
+    logger.error('Failed syncing TrueLayer accounts:', error);
+    captureException(error);
+  } finally {
+    logger.groupEnd();
+  }
+
+  if (retVal.some(v => v.res.updatedAccounts.length > 0)) {
+    connection.send('sync-event', {
+      type: 'success',
+      tables: ['transactions'],
+    });
+  }
 
   return retVal;
 }
@@ -1710,6 +1917,208 @@ async function unlinkAccount({ id }: { id: AccountEntity['id'] }) {
   return 'ok';
 }
 
+async function linkTrueLayerAccount({
+  account,
+  upgradingId,
+  offBudget = false,
+  startingDate,
+  startingBalance,
+}: LinkAccountBaseParams & {
+  account: SyncServerTrueLayerAccount;
+}) {
+  let id;
+  const institution =
+    typeof account.institution === 'string'
+      ? { name: account.institution, id: 'legacy' }
+      : {
+          name: account.institution.name,
+          id: account.institution.id || 'legacy',
+        };
+
+  const bank = await link.findOrCreateBank(
+    { name: institution.name },
+    institution.id, // connectionId is used as bank_id
+  );
+
+  if (upgradingId) {
+    const accRow = await db.first<db.DbAccount>(
+      'SELECT * FROM accounts WHERE id = ?',
+      [upgradingId],
+    );
+
+    if (!accRow) {
+      throw new Error(`Account with ID ${upgradingId} not found.`);
+    }
+
+    id = accRow.id;
+    await db.update('accounts', {
+      id,
+      account_id: account.account_id,
+      bank: bank.id,
+      account_sync_source: 'trueLayer',
+    });
+  } else {
+    id = uuidv4();
+    await db.insertWithUUID('accounts', {
+      id,
+      account_id: account.account_id,
+      mask: account.mask,
+      name: account.name,
+      official_name: account.official_name,
+      bank: bank.id,
+      offbudget: offBudget ? 1 : 0,
+      account_sync_source: 'trueLayer',
+    });
+    await db.insertPayee({
+      name: '',
+      transfer_acct: id,
+    });
+  }
+
+  const { 'user-id': userId, 'user-key': userKey } =
+    await asyncStorage.multiGet(['user-id', 'user-key']);
+
+  const syncRes = await bankSync.syncAccount(
+    userId as string,
+    userKey as string,
+    id,
+    account.account_id,
+    bank.id,
+    startingDate,
+    startingBalance,
+  );
+
+  return { id, syncRes };
+}
+
+async function trueLayerStatus() {
+  const clientId = await db.first<{ value: string }>(
+    "SELECT value FROM preferences WHERE id = 'truelayer-client-id'",
+  );
+  const clientSecret = await db.first<{ value: string }>(
+    "SELECT value FROM preferences WHERE id = 'truelayer-client-secret'",
+  );
+  return clientId?.value && clientSecret?.value ? 'connected' : 'not-connected';
+}
+
+async function trueLayerAuthStatus() {
+  const connections = await truelayer.getConnections();
+  return connections.length > 0 ? 'authenticated' : 'not-authenticated';
+}
+
+async function trueLayerAccounts() {
+  try {
+    const connections = await truelayer.getConnections();
+    const allAccounts = [];
+
+    const existingAccounts = await db.getAccounts();
+    const linkedTrueLayerAccountIds = new Set(
+      existingAccounts
+        .filter(a => (a.account_sync_source as string) === 'trueLayer')
+        .map(a => a.account_id),
+    );
+
+    for (const connectionId of connections) {
+      try {
+        const [accounts, cards] = await Promise.all([
+          truelayer.listAccounts(connectionId).catch(err => {
+            logger.warn(
+              `Could not fetch accounts for connection ${connectionId}:`,
+              err,
+            );
+            return [];
+          }),
+          truelayer.listCards(connectionId).catch(err => {
+            logger.warn(
+              `Could not fetch cards for connection ${connectionId}:`,
+              err,
+            );
+            return [];
+          }),
+        ]);
+
+        const mappedAccounts = accounts
+          .filter(a => !linkedTrueLayerAccountIds.has(`account:${a.account_id}`))
+          .map(a => ({
+            account_id: `account:${a.account_id}`,
+            name: a.display_name,
+            official_name: a.display_name,
+            mask: a.account_number.number || '',
+            institution: {
+              id: connectionId,
+              name: a.provider.provider_id,
+            },
+          }));
+
+        const mappedCards = cards
+          .filter(c => !linkedTrueLayerAccountIds.has(`card:${c.account_id}`))
+          .map(c => ({
+            account_id: `card:${c.account_id}`,
+            name: c.display_name,
+            official_name: c.display_name,
+            mask: c.partial_card_number,
+            institution: {
+              id: connectionId,
+              name: c.provider.provider_id,
+            },
+          }));
+
+        allAccounts.push(...mappedAccounts, ...mappedCards);
+      } catch (err) {
+        logger.error(
+          `Unexpected error processing connection ${connectionId}:`,
+          err,
+        );
+      }
+    }
+
+    return allAccounts;
+  } catch (err) {
+    if (err instanceof Error && err.message === 'No access token') {
+      return { error: { message: 'No access token', code: 'no-token' } };
+    }
+    throw err;
+  }
+}
+
+async function trueLayerDisconnect({ connectionId }: { connectionId: string }) {
+  if (connectionId === 'all') {
+    const connections = await truelayer.getConnections();
+    for (const id of connections) {
+      await truelayer.removeConnection(id);
+    }
+    // Also remove legacy tokens
+    await truelayer.removeConnection('legacy');
+    return 'ok';
+  }
+
+  await truelayer.removeConnection(connectionId);
+  return 'ok';
+}
+
+async function trueLayerGetConnections() {
+  const connections = await truelayer.getConnections();
+  const results = [];
+
+  for (const id of connections) {
+    try {
+      const suffix = truelayer.getPrefSuffix(id);
+      // We can try to fetch me info to get provider name, or just return IDs
+      // For now, let's try to get me info
+      const me = await truelayer.getMe(id).catch(() => null);
+      results.push({
+        id,
+        providerId: me?.provider?.provider_id || 'Unknown',
+        fullName: me?.provider?.display_name || 'Legacy',
+      });
+    } catch (e) {
+      results.push({ id, providerId: 'Error', fullName: 'Error' });
+    }
+  }
+
+  return results;
+}
+
 export const app = createApp<AccountHandlers>();
 
 app.method('account-update', mutator(undoable(updateAccount)));
@@ -1749,3 +2158,12 @@ app.method('accounts-bank-sync', accountsBankSync);
 app.method('simplefin-batch-sync', simpleFinBatchSync);
 app.method('transactions-import', mutator(undoable(importTransactions)));
 app.method('account-unlink', mutator(unlinkAccount));
+app.method('truelayer-complete-auth', trueLayerCompleteAuth);
+app.method('truelayer-status', trueLayerStatus);
+app.method('truelayer-auth-status', trueLayerAuthStatus);
+app.method('truelayer-accounts', trueLayerAccounts);
+app.method('truelayer-accounts-link', linkTrueLayerAccount);
+app.method('truelayer-batch-sync', trueLayerBatchSync);
+app.method('truelayer-disconnect', trueLayerDisconnect);
+app.method('truelayer-get-connections', trueLayerGetConnections);
+

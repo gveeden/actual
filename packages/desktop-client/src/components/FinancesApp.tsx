@@ -41,6 +41,7 @@ import { Settings } from './settings';
 import { FloatableSidebar } from './sidebar';
 import { ManageTagsPage } from './tags/ManageTagsPage';
 import { Titlebar } from './Titlebar';
+import { TrueLayerCallback } from './TrueLayerCallback';
 
 function NarrowNotSupported({
   redirectTo = '/budget',
@@ -158,14 +159,14 @@ export function FinancesApp() {
               title: t('A new version of Actual is available!'),
               message:
                 (process.env.REACT_APP_IS_PIKAPODS ?? '').toLowerCase() ===
-                'true'
+                  'true'
                   ? t(
-                      'A new version of Actual is available! Your Pikapods instance will be automatically updated in the next few days - no action needed.',
-                    )
+                    'A new version of Actual is available! Your Pikapods instance will be automatically updated in the next few days - no action needed.',
+                  )
                   : t(
-                      'Version {{latestVersion}} of Actual was recently released.',
-                      { latestVersion: versionInfo.latestVersion },
-                    ),
+                    'Version {{latestVersion}} of Actual was recently released.',
+                    { latestVersion: versionInfo.latestVersion },
+                  ),
               sticky: true,
               id: 'update-notification',
               button: {
@@ -340,6 +341,11 @@ export function FinancesApp() {
                   <Route
                     path="/enablebanking/auth_callback"
                     element={<EnableBankingCallback />}
+                  />
+
+                  <Route
+                    path="/truelayer/auth_callback"
+                    element={<TrueLayerCallback />}
                   />
 
                   <Route

@@ -55,6 +55,11 @@ export type SyncedPrefs = Partial<
     | `qif-swap-payee-memo-${string}`
     | `camt-swap-payee-memo-${string}`
     | `flip-amount-${string}-${'csv' | 'qif'}`
+    | 'truelayer-client-id'
+    | 'truelayer-client-secret'
+    | 'truelayer-access-token'
+    | 'truelayer-refresh-token'
+    | 'truelayer-expires-at'
     | `flags.${FeatureFlag}`
     | `learn-categories`
     | `show-hidden-tags`,

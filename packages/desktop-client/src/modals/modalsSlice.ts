@@ -175,6 +175,13 @@ export type Modal =
       };
     }
   | {
+      name: 'truelayer-external-msg';
+      options: {
+        onClose?: (() => void) | undefined;
+        onSuccess?: (() => void) | undefined;
+      };
+    }
+  | {
       name: 'delete-budget';
       options: { file: File };
     }

@@ -40,6 +40,7 @@ import { RepairTransactions } from './RepairTransactions';
 import { ResetCache, ResetSync } from './Reset';
 import { ThemeSettings } from './Themes';
 import { AdvancedToggle, Setting } from './UI';
+import { BankSyncSettings } from './BankSync';
 
 function About() {
   const version = useServerVersion();
@@ -245,6 +246,7 @@ export function Settings() {
         <EncryptionSettings />
         <BudgetTypeSettings />
         {isElectron() && <Backups />}
+        <BankSyncSettings />
         <ExportBudget />
         <AdvancedToggle>
           <AdvancedAbout />

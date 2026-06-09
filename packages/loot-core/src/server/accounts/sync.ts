@@ -36,6 +36,7 @@ import type {
 } from '#types/models';
 
 import { getStartingBalancePayee } from './payees';
+import * as truelayer from './truelayer';
 import { title } from './title';
 
 function BankSyncError(type: string, code: string, details?: object) {
@@ -1067,6 +1068,11 @@ async function processBankSyncDownload(
         );
       }, currentBalance);
       balanceToUse = previousBalance;
+    } else if (acctRow.account_sync_source === 'trueLayer') {
+      const previousBalance = transactions.reduce((total, trans) => {
+        return total - trans.amount;
+      }, currentBalance);
+      balanceToUse = previousBalance;
     } else if (acctRow.account_sync_source === 'pluggyai') {
       const currentBalance = download.startingBalance;
       const previousBalance = transactions.reduce(
@@ -1196,6 +1202,16 @@ export async function syncAccount(
     );
   } else if (acctRow.account_sync_source === 'enableBanking') {
     download = await downloadEnableBankingTransactions(acctId, syncStartDate);
+  } else if (acctRow.account_sync_source === 'trueLayer') {
+    const bank = await db.first<Pick<db.DbBank, 'bank_id'>>(
+      'SELECT bank_id FROM banks WHERE id = ?',
+      [acctRow.bank],
+    );
+    download = await truelayer.downloadTrueLayerTransactions(
+      acctId,
+      syncStartDate,
+      bank?.bank_id,
+    );
   } else {
     throw new Error(
       `Unrecognized bank-sync provider: ${acctRow.account_sync_source}`,
@@ -1210,6 +1226,60 @@ export async function syncAccount(
     customStartingBalance,
     customStartingDate,
   );
+}
+
+export async function trueLayerBatchSync(
+  accounts: Array<Pick<AccountEntity, 'id' | 'account_id'>>,
+) {
+  const startDates = await Promise.all(
+    accounts.map(async a => getAccountSyncStartDate(a.id)),
+  );
+
+  const promises = [];
+  for (let i = 0; i < accounts.length; i++) {
+    const account = accounts[i];
+    const startDate = startDates[i];
+
+    promises.push(
+      db.first<Pick<db.DbBank, 'bank_id'>>(
+        'SELECT b.bank_id FROM accounts a JOIN banks b ON a.bank = b.id WHERE a.id = ?',
+        [account.id],
+      ).then(bank =>
+        truelayer
+          .downloadTrueLayerTransactions(
+            account.account_id,
+            startDate,
+            bank?.bank_id,
+          )
+          .then(async download => {
+            const acctRow = await db.select('accounts', account.id);
+            const oldestTransaction = await getAccountOldestTransaction(
+              account.id,
+            );
+            const newAccount = oldestTransaction == null;
+            return processBankSyncDownload(
+              download,
+              account.id,
+              acctRow,
+              newAccount,
+            );
+          })
+          .then(res => ({
+            accountId: account.id,
+            res,
+          }))
+          .catch(err => ({
+            accountId: account.id,
+            res: {
+              error_type: err?.category || 'INTERNAL_ERROR',
+              error_code: err?.code || 'INTERNAL_ERROR',
+            },
+          })),
+      ),
+    );
+  }
+
+  return await Promise.all(promises);
 }
 
 export async function simpleFinBatchSync(

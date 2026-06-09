@@ -18,6 +18,7 @@ import type {
   SyncServerGoCardlessAccount,
   SyncServerPluggyAiAccount,
   SyncServerSimpleFinAccount,
+  SyncServerTrueLayerAccount,
 } from '@actual-app/core/types/models';
 import { format as formatDate, parseISO } from 'date-fns';
 
@@ -27,6 +28,7 @@ import {
   useLinkAccountMutation,
   useLinkAccountPluggyAiMutation,
   useLinkAccountSimpleFinMutation,
+  useLinkAccountTrueLayerMutation,
   useUnlinkAccountMutation,
 } from '#accounts';
 import { Autocomplete } from '#components/autocomplete/Autocomplete';
@@ -39,7 +41,7 @@ import { AmountInput } from '#components/util/AmountInput';
 import { useAccounts } from '#hooks/useAccounts';
 import { useDateFormat } from '#hooks/useDateFormat';
 import { useFormat } from '#hooks/useFormat';
-import { closeModal } from '#modals/modalsSlice';
+import { closeModal, pushModal } from '#modals/modalsSlice';
 import { transactions } from '#queries';
 import { liveQuery } from '#queries/liveQuery';
 import { useDispatch } from '#redux';
@@ -103,6 +105,12 @@ export type SelectLinkedAccountsModalProps =
       externalAccounts: SyncServerAkahuAccount[];
       syncSource: 'akahu';
       upgradingAccountId?: string;
+    }
+  | {
+      requisitionId?: undefined;
+      externalAccounts: SyncServerTrueLayerAccount[];
+      syncSource: 'trueLayer';
+      upgradingAccountId?: string;
     };
 
 export function SelectLinkedAccountsModal({
@@ -149,6 +157,12 @@ export function SelectLinkedAccountsModal({
           return {
             syncSource: 'enableBanking',
             externalAccounts: toSort as SyncServerEnableBankingAccount[],
+            upgradingAccountId,
+          };
+        case 'trueLayer':
+          return {
+            syncSource: 'trueLayer',
+            externalAccounts: toSort as SyncServerTrueLayerAccount[],
             upgradingAccountId,
           };
         default:
@@ -222,6 +236,7 @@ export function SelectLinkedAccountsModal({
   const linkAccountPluggyAi = useLinkAccountPluggyAiMutation();
   const linkAccountAkahu = useLinkAccountAkahuMutation();
   const linkAccountEnableBanking = useLinkAccountEnableBankingMutation();
+  const linkAccountTrueLayer = useLinkAccountTrueLayerMutation();
 
   async function onNext() {
     const chosenLocalAccountIds = Object.values(chosenAccounts);
@@ -319,6 +334,21 @@ export function SelectLinkedAccountsModal({
             startingDate,
             startingBalance,
           });
+        } else if (propsWithSortedExternalAccounts.syncSource === 'trueLayer') {
+          linkAccountTrueLayer.mutate({
+            account:
+              propsWithSortedExternalAccounts.externalAccounts[
+                externalAccountIndex
+              ],
+            upgradingId:
+              chosenLocalAccountId !== addOnBudgetAccountOption.id &&
+              chosenLocalAccountId !== addOffBudgetAccountOption.id
+                ? chosenLocalAccountId
+                : undefined,
+            offBudget,
+            startingDate,
+            startingBalance,
+          });
         } else {
           linkAccount.mutate({
             requisitionId: propsWithSortedExternalAccounts.requisitionId,
@@ -347,11 +377,7 @@ export function SelectLinkedAccountsModal({
   );
 
   function onSetLinkedAccount(
-    externalAccount:
-      | SyncServerGoCardlessAccount
-      | SyncServerSimpleFinAccount
-      | SyncServerPluggyAiAccount
-      | SyncServerAkahuAccount,
+    externalAccount: ExternalAccount,
     localAccountId: string | null | undefined,
   ) {
     setChosenAccounts(accounts => {
@@ -464,6 +490,22 @@ export function SelectLinkedAccountsModal({
                 add:
               </Trans>
             </Text>
+
+            {syncSource === 'trueLayer' && (
+              <Button
+                onPress={() => {
+                  state.close();
+                  dispatch(
+                    pushModal({
+                      modal: { name: 'truelayer-external-msg', options: {} },
+                    }),
+                  );
+                }}
+                style={{ marginBottom: 20, alignSelf: 'flex-start' }}
+              >
+                <Trans>Add another bank</Trans>
+              </Button>
+            )}
           </View>
 
           {isNarrowWidth ? (
@@ -577,7 +619,8 @@ type ExternalAccount =
   | SyncServerSimpleFinAccount
   | SyncServerPluggyAiAccount
   | SyncServerAkahuAccount
-  | SyncServerEnableBankingAccount;
+  | SyncServerEnableBankingAccount
+  | SyncServerTrueLayerAccount;
 
 type StartingBalanceInfo = {
   date: string;
@@ -816,7 +859,8 @@ function getInstitutionName(
     | SyncServerGoCardlessAccount
     | SyncServerSimpleFinAccount
     | SyncServerPluggyAiAccount
-    | SyncServerEnableBankingAccount,
+    | SyncServerEnableBankingAccount
+    | SyncServerTrueLayerAccount,
 ) {
   if (typeof externalAccount?.institution === 'string') {
     return externalAccount?.institution ?? '';

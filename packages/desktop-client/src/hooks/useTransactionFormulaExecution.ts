@@ -55,7 +55,7 @@ export function useTransactionFormulaExecution(
         hfInstance = HyperFormula.buildEmpty({
           licenseKey: 'gpl-v3',
           language: 'enUS',
-          localeLang: typeof locale === 'string' ? locale : 'en-US',
+          localeLang: typeof locale === 'string' ? locale : 'en-gb',
           dateFormats: ['DD/MM/YYYY', 'YYYY-MM-DD', 'YYYY/MM/DD'],
           context: {
             // No server prefetch in preview

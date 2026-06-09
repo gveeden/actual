@@ -10,6 +10,7 @@ import * as bankSync from './sync';
 vi.mock('./sync', async () => ({
   ...(await vi.importActual('./sync')),
   simpleFinBatchSync: vi.fn(),
+  trueLayerBatchSync: vi.fn(),
   syncAccount: vi.fn(),
 }));
 
@@ -258,3 +259,64 @@ describe('bank sync handlers must not nest mutators', () => {
     expect(result.errors).toEqual([]);
   });
 });
+const trueLayerBatchSyncHandler = app.handlers['truelayer-batch-sync'];
+
+async function setupTrueLayerAccounts(
+  accounts: Array<{
+    id: string;
+    name: string;
+    accountId: string;
+  }>,
+) {
+  insertBank({ id: 'bank1', bank_id: 'tl-bank', name: 'TrueLayer' });
+  for (const acct of accounts) {
+    await db.insertAccount({
+      id: acct.id,
+      name: acct.name,
+      bank: 'bank1',
+      account_id: acct.accountId,
+      account_sync_source: 'trueLayer',
+    });
+  }
+}
+
+describe('trueLayerBatchSync', () => {
+  it('handles errors in response without crashing', async () => {
+    await setupTrueLayerAccounts([
+      { id: 'acct1', name: 'Checking', accountId: 'ext-1' },
+      { id: 'acct2', name: 'Savings', accountId: 'ext-2' },
+    ]);
+
+    vi.mocked(bankSync.trueLayerBatchSync).mockResolvedValue([
+      {
+        accountId: 'acct1',
+        res: {
+          error_code: 'ACCESS_DENIED',
+          error_type: 'AUTH_ERROR',
+        },
+      },
+      {
+        accountId: 'acct2',
+        res: {
+          added: ['trans1'],
+          updated: [],
+        },
+      },
+    ] as any);
+
+    const result = await trueLayerBatchSyncHandler({ ids: [] });
+
+    expect(result).toHaveLength(2);
+
+    const acct1Result = result.find(r => r.accountId === 'acct1');
+    expect(acct1Result!.res.errors).toHaveLength(1);
+    expect(acct1Result!.res.errors[0]).toMatchObject({
+      code: 'ACCESS_DENIED',
+    });
+
+    const acct2Result = result.find(r => r.accountId === 'acct2');
+    expect(acct2Result!.res.errors).toHaveLength(0);
+    expect(acct2Result!.res.newTransactions).toContain('trans1');
+  });
+});
+
