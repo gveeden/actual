@@ -132,6 +132,19 @@ export type AgeOfMoneyWidget = AbstractWidget<
   } | null
 >;
 
+export type FutureMoneyWidget = AbstractWidget<
+  'future-money-card',
+  {
+    name?: string;
+    projectionMonths?: number;
+    averagingPeriod?: number;
+    accountIds?: string[];
+    conditions?: RuleConditionEntity[];
+    conditionsOp?: 'and' | 'or';
+    timeFrame?: TimeFrame;
+  } | null
+>;
+
 type SpecializedWidget =
   | NetWorthWidget
   | CashFlowWidget
@@ -144,7 +157,11 @@ type SpecializedWidget =
   | FormulaWidget
   | SankeyWidget
   | AgeOfMoneyWidget
+<<<<<<< HEAD
   | BalanceForecastWidget;
+=======
+  | FutureMoneyWidget;
+>>>>>>> 4547b60bc (Sanky edits)
 export type DashboardWidgetEntity = SpecializedWidget | CustomReportWidget;
 export type NewDashboardWidgetEntity = Omit<
   DashboardWidgetEntity,
@@ -241,6 +258,10 @@ export type SankeyWidget = AbstractWidget<
     groupAccounts?: boolean;
     layerFrom?: string;
     layerTo?: string;
+    creditAccountIds?: string[];
+    showAverage?: boolean;
+    showAccounts?: boolean;
+    showCarryForward?: boolean;
   } | null
 >;
 

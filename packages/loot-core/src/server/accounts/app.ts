@@ -1975,20 +1975,24 @@ async function linkTrueLayerAccount({
     });
   }
 
-  const { 'user-id': userId, 'user-key': userKey } =
-    await asyncStorage.multiGet(['user-id', 'user-key']);
-
   const syncRes = await bankSync.syncAccount(
-    userId as string,
-    userKey as string,
+    undefined,
+    undefined,
     id,
     account.account_id,
-    bank.id,
+    bank.bank_id,
     startingDate,
     startingBalance,
   );
 
-  return { id, syncRes };
+  await handleSyncResponse(syncRes, id);
+
+  connection.send('sync-event', {
+    type: 'success',
+    tables: ['transactions'],
+  });
+
+  return 'ok';
 }
 
 async function trueLayerStatus() {
@@ -2038,7 +2042,9 @@ async function trueLayerAccounts() {
         ]);
 
         const mappedAccounts = accounts
-          .filter(a => !linkedTrueLayerAccountIds.has(`account:${a.account_id}`))
+          .filter(
+            a => !linkedTrueLayerAccountIds.has(`account:${a.account_id}`),
+          )
           .map(a => ({
             account_id: `account:${a.account_id}`,
             name: a.display_name,
@@ -2166,4 +2172,3 @@ app.method('truelayer-accounts-link', linkTrueLayerAccount);
 app.method('truelayer-batch-sync', trueLayerBatchSync);
 app.method('truelayer-disconnect', trueLayerDisconnect);
 app.method('truelayer-get-connections', trueLayerGetConnections);
-

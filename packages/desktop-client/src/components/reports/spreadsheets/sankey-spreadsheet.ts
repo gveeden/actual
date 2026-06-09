@@ -3,6 +3,7 @@ import { send } from '@actual-app/core/platform/client/connection';
 import * as monthUtils from '@actual-app/core/shared/months';
 import { q } from '@actual-app/core/shared/query';
 import type {
+  AccountEntity,
   CategoryGroupEntity,
   RuleConditionEntity,
 } from '@actual-app/core/types/models';
@@ -12,20 +13,20 @@ import { getColorScale } from '#components/reports/chart-theme';
 import type { useSpreadsheet } from '#hooks/useSpreadsheet';
 import { aqlQuery } from '#queries/aqlQuery';
 
-type BudgetMonthCategory = {
+export type BudgetMonthGroup = {
+  id: string;
+  name: string;
+  is_income: boolean;
+  categories: BudgetMonthCategory[];
+};
+
+export type BudgetMonthCategory = {
   id: string;
   name: string;
   spent?: number;
   budgeted?: number;
   balance?: number;
   received?: number;
-};
-
-type BudgetMonthGroup = {
-  id: string;
-  name: string;
-  is_income: boolean;
-  categories: BudgetMonthCategory[];
 };
 
 type BudgetMonthResponse = {
@@ -37,7 +38,7 @@ type BudgetMonthResponse = {
   toBudget: number;
 };
 
-type AggregatedBudget = {
+export type AggregatedBudget = {
   toBudget: number;
   fromPreviousMonth: number;
   lastMonthOverspent: number;
@@ -47,14 +48,14 @@ type AggregatedBudget = {
   endMonth: string;
 };
 
-type SankeyNode = {
+export type SankeyNode = {
   name: string;
   percentageLabel?: string;
   key: string;
   color?: string;
 };
 
-type SankeyLink = {
+export type SankeyLink = {
   source: number;
   target: number;
   value: number;
@@ -62,12 +63,12 @@ type SankeyLink = {
   color?: string;
 };
 
-type SankeyData = {
+export type SankeyData = {
   nodes: SankeyNode[];
   links: SankeyLink[];
 };
 
-type CategoryEntry = {
+export type CategoryEntry = {
   categoryGroup: string;
   categoryGroupId: string;
   category: string;
@@ -79,11 +80,24 @@ type CategoryEntry = {
   accountId?: string;
   payeeName?: string;
   payeeId?: string;
+  isTransfer?: boolean;
+  toAccountId?: string;
+  toAccountName?: string;
+  isBroughtForward?: boolean;
 };
 
-type SortMode = 'per-group' | 'global' | 'budget-order';
+export type SankeyRawData = {
+  data: CategoryEntry[];
+  aggregated?: AggregatedBudget;
+};
 
+<<<<<<< HEAD
 type NodeKey = string;
+=======
+export type SortMode = 'per-group' | 'global' | 'budget-order';
+
+export type NodeKey = string;
+>>>>>>> 4547b60bc (Sanky edits)
 export type NodeData = {
   to: Map<NodeKey, number>;
   value?: number;
@@ -97,11 +111,14 @@ export type NodeData = {
   color?: string;
 };
 export type Graph = Map<NodeKey, NodeData>;
+<<<<<<< HEAD
 
 type TooltipInfoMap = Map<
   NodeKey,
   Map<NodeKey, Array<{ name: string; value: number }>>
 >;
+=======
+>>>>>>> 4547b60bc (Sanky edits)
 
 const SpecialNodeKeys = {
   ToBudget: 'to_budget',
@@ -150,6 +167,7 @@ export function createBaseGraphSpreadsheet(
   conditions: RuleConditionEntity[] = [],
   conditionsOp: 'and' | 'or' = 'and',
   mode: 'budgeted' | 'spent' = 'spent',
+<<<<<<< HEAD
   groupAccounts: boolean = false,
 ) {
   return async (
@@ -207,11 +225,48 @@ async function createBaseGraph(
 
 export function buildSankeyData(
   baseGraph: Graph,
+=======
+  creditAccountIds: string[] = [],
+  accounts: AccountEntity[] = [],
+) {
+  return async (
+    spreadsheet: ReturnType<typeof useSpreadsheet>,
+    setData: (data: SankeyRawData) => void,
+  ) => {
+    let data: CategoryEntry[] = [];
+    let aggregated: AggregatedBudget | undefined;
+    if (mode === 'budgeted') {
+      ({ data, aggregated } = await createBudgetSpreadsheet(
+        start,
+        end,
+        conditions,
+        conditionsOp,
+      )());
+    } else if (mode === 'spent') {
+      data = await createTransactionsSpreadsheet(
+        start,
+        end,
+        categories,
+        conditions,
+        conditionsOp,
+        creditAccountIds,
+        accounts,
+      )();
+    }
+
+    setData({ data, aggregated });
+  };
+}
+
+export function calculateGraphData(
+  rawData: SankeyRawData,
+>>>>>>> 4547b60bc (Sanky edits)
   topNcategories: number,
   categories: CategoryGroupEntity[],
   categorySort: SortMode,
   layerFrom: GraphLayers,
   layerTo: GraphLayers,
+<<<<<<< HEAD
 ): SankeyData {
   const graph = cloneGraph(baseGraph);
 
@@ -228,6 +283,76 @@ export function buildSankeyData(
   filterGraphByLayers(sortedGraph, layerFrom, layerTo);
 
   return convertToSankeyData(sortedGraph, toolTipInfoMap);
+=======
+  creditAccountIds: string[] = [],
+  showAverage: boolean = false,
+  startDate: string = '',
+  endDate: string = '',
+  showAccounts: boolean = true,
+  showCarryForward: boolean = true,
+): SankeyData {
+  const { data: categoryData, aggregated } = rawData;
+  let graph: Graph;
+  if (aggregated) {
+    graph = createBudgetGraph(categoryData, aggregated);
+  } else {
+    graph = createTransactionsGraph(
+      categoryData,
+      creditAccountIds,
+      showCarryForward,
+    );
+  }
+
+  if (!showAccounts) {
+    collapseSankeyLayer(graph, GraphLayers.Account);
+  }
+
+  if (showAverage && startDate && endDate) {
+    const months =
+      monthUtils.differenceInCalendarMonths(endDate, startDate) + 1;
+    averageGraphValues(graph, months);
+  }
+
+  groupOtherCategories(graph, topNcategories, categorySort);
+  const sortedGraph = sortGraph(graph, categorySort, categories);
+  addPercentageLabels(sortedGraph);
+  addColors(sortedGraph);
+  filterGraphByLayers(sortedGraph, layerFrom, layerTo);
+  cleanUpNodes(sortedGraph);
+  return convertToSankeyData(sortedGraph);
+}
+
+function processSankeyGraphData(
+  categoryData: CategoryEntry[],
+  topNcategories: number,
+  categories: CategoryGroupEntity[],
+  categorySort: SortMode,
+  setData: (data: SankeyData) => void,
+  layerFrom: GraphLayers,
+  layerTo: GraphLayers,
+  aggregated?: AggregatedBudget,
+  creditAccountIds: string[] = [],
+  showAverage: boolean = false,
+  startDate: string = '',
+  endDate: string = '',
+  showAccounts: boolean = true,
+) {
+  const graphData = calculateGraphData(
+    { data: categoryData, aggregated },
+    topNcategories,
+    categories,
+    categorySort,
+    layerFrom,
+    layerTo,
+    creditAccountIds,
+    showAverage,
+    startDate,
+    endDate,
+    showAccounts,
+    true, // Default showCarryForward to true for legacy callers
+  );
+  setData(graphData);
+>>>>>>> 4547b60bc (Sanky edits)
 }
 
 export function createBudgetSpreadsheet(
@@ -351,7 +476,12 @@ export function createTransactionsSpreadsheet(
   categories: CategoryGroupEntity[],
   conditions: RuleConditionEntity[] = [],
   conditionsOp: 'and' | 'or' = 'and',
+<<<<<<< HEAD
   groupAccounts: boolean,
+=======
+  creditAccountIds: string[] = [],
+  accounts: AccountEntity[] = [],
+>>>>>>> 4547b60bc (Sanky edits)
 ) {
   return async () => {
     // gather filters user has set
@@ -366,13 +496,19 @@ export function createTransactionsSpreadsheet(
       filters,
       start,
       end,
+<<<<<<< HEAD
       groupAccounts,
+=======
+      creditAccountIds,
+      accounts,
+>>>>>>> 4547b60bc (Sanky edits)
     );
 
     return categoryData;
   };
 }
 
+<<<<<<< HEAD
 function cloneGraph(graph: Graph): Graph {
   const clonedGraph: Graph = new Map();
 
@@ -385,6 +521,59 @@ function cloneGraph(graph: Graph): Graph {
   }
 
   return clonedGraph;
+=======
+function collapseSankeyLayer(graph: Graph, layerType: GraphLayers) {
+  const nodesToCollapse = Array.from(graph.keys()).filter(
+    key => graph.get(key)?.type === layerType,
+  );
+
+  nodesToCollapse.forEach(collapseKey => {
+    const collapseNode = graph.get(collapseKey);
+    if (!collapseNode) return;
+
+    // Find all parents of this node
+    const parents = Array.from(graph.keys()).filter(key =>
+      graph.get(key)?.to.has(collapseKey),
+    );
+
+    parents.forEach(parentKey => {
+      const parentNode = graph.get(parentKey);
+      if (!parentNode) return;
+
+      const inflowValue = parentNode.to.get(collapseKey) || 0;
+
+      // Redistribute this inflow to all children of the collapse node
+      const totalOutflow = Array.from(collapseNode.to.values()).reduce(
+        (acc, val) => acc + val,
+        0,
+      );
+
+      if (totalOutflow > 0) {
+        collapseNode.to.forEach((outflowValue, childKey) => {
+          const share = Math.round((inflowValue * outflowValue) / totalOutflow);
+          addValueToLink(graph, parentKey, childKey, share);
+        });
+      }
+
+      parentNode.to.delete(collapseKey);
+    });
+
+    graph.delete(collapseKey);
+  });
+}
+
+function averageGraphValues(graph: Graph, months: number) {
+  if (months <= 1) return;
+
+  graph.forEach(node => {
+    if (node.value !== undefined) {
+      node.value = Math.round(node.value / months);
+    }
+    node.to.forEach((val, key) => {
+      node.to.set(key, Math.round(val / months));
+    });
+  });
+>>>>>>> 4547b60bc (Sanky edits)
 }
 
 // Filter budget category groups to only those matching the user's conditions.
@@ -492,7 +681,12 @@ async function fetchCategoryData(
   filters: unknown[] = [],
   start: string,
   end: string,
+<<<<<<< HEAD
   groupAccounts: boolean,
+=======
+  creditAccountIds: string[] = [],
+  accounts: AccountEntity[] = [],
+>>>>>>> 4547b60bc (Sanky edits)
 ): Promise<CategoryEntry[]> {
   const nested = await Promise.all(
     categoryGroups.map(async (categoryGroup: CategoryGroupEntity) => {
@@ -552,6 +746,7 @@ async function fetchCategoryData(
       return entries.flat();
     }),
   );
+<<<<<<< HEAD
   const allCategoryData = nested.flat();
 
   if (groupAccounts) {
@@ -564,6 +759,91 @@ async function fetchCategoryData(
   }
 
   return allCategoryData;
+=======
+
+  // Fetch transfers (only outflows to avoid double counting)
+  const transferResults = await aqlQuery(
+    q('transactions')
+      .filter({ [conditionsOpKey]: filters })
+      .filter({
+        $and: [
+          { date: { $gte: monthUtils.firstDayOfMonth(start) } },
+          { date: { $lte: monthUtils.lastDayOfMonth(end) } },
+        ],
+      })
+      .filter({
+        'payee.transfer_acct': { $ne: null },
+        amount: { $lt: 0 },
+      })
+      .groupBy([{ $id: '$account' }, { $id: '$payee.transfer_acct' }])
+      .select([
+        { accountId: { $id: '$account.id' } },
+        { accountName: { $id: '$account.name' } },
+        { toAccountId: { $id: '$payee.transfer_acct.id' } },
+        { toAccountName: { $id: '$payee.transfer_acct.name' } },
+        { amount: { $sum: '$amount' } },
+      ]),
+  );
+
+  const transferEntries: CategoryEntry[] = transferResults.data.map(
+    (row: {
+      amount: number;
+      accountId: string;
+      accountName: string;
+      toAccountId: string;
+      toAccountName: string;
+    }) => ({
+      categoryGroup: t('Transfers'),
+      categoryGroupId: 'transfers_group',
+      category: t('Transfers'),
+      categoryId: 'transfers_cat',
+      value: Math.abs(row.amount),
+      isIncome: false,
+      accountId: row.accountId,
+      accountName: row.accountName,
+      isTransfer: true,
+      toAccountId: row.toAccountId,
+      toAccountName: row.toAccountName,
+    }),
+  );
+
+  // Brought Forward: Calculate balance of on-budget accounts before start date
+  const historyStart = monthUtils.firstDayOfMonth(start);
+  const bfResults = await Promise.all(
+    accounts
+      .filter(a => !a.offbudget && !a.closed)
+      .map(async acct => {
+        const res = await aqlQuery(
+          q('transactions')
+            .filter({ account: acct.id, date: { $lt: historyStart } })
+            .calculate({ $sum: '$amount' }),
+        );
+        return {
+          accountId: acct.id,
+          accountName: acct.name,
+          value: (res.data as number) || 0,
+        };
+      }),
+  );
+
+  const bfEntries: CategoryEntry[] = bfResults
+    .filter(res => res.value !== 0)
+    .map(res => ({
+      categoryGroup: t('Brought Forward'),
+      categoryGroupId: 'bf_group',
+      category: t('Starting balance'),
+      categoryId: 'bf_cat',
+      value: Math.abs(res.value),
+      isIncome: res.value > 0,
+      accountId: res.accountId,
+      accountName: res.accountName,
+      isBroughtForward: true,
+    }));
+
+  return [...nested.flat(), ...transferEntries, ...bfEntries].filter(
+    e => e.value > 0,
+  );
+>>>>>>> 4547b60bc (Sanky edits)
 }
 
 export function createBudgetGraph(
@@ -722,6 +1002,7 @@ export function createBudgetGraph(
   return graph;
 }
 
+<<<<<<< HEAD
 export function createTransactionsGraph(categoryData: CategoryEntry[]): Graph {
   function addAccountNode(accountId: string, accountName: string): void {
     if (accountId === SpecialNodeKeys.AllAccounts) {
@@ -737,11 +1018,158 @@ export function createTransactionsGraph(categoryData: CategoryEntry[]): Graph {
     }
   }
 
+=======
+function createTransactionsGraph(
+  categoryData: CategoryEntry[],
+  creditAccountIds: string[] = [],
+  showCarryForward: boolean = true,
+): Graph {
+>>>>>>> 4547b60bc (Sanky edits)
   const graph: Graph = new Map();
 
+  const accountStartingBalances = new Map<string, number>();
+  const accountInflows = new Map<string, number>();
+  const accountOutflows = new Map<string, number>();
+
   categoryData.forEach(entry => {
-    if (entry.accountId && entry.accountName && entry.categoryId) {
+    if (entry.isBroughtForward) {
+      if (entry.accountId) {
+        // Track the raw starting balance per account
+        accountStartingBalances.set(
+          entry.accountId,
+          (accountStartingBalances.get(entry.accountId) || 0) +
+            (entry.isIncome ? entry.value : -entry.value),
+        );
+      }
+    } else if (entry.isTransfer) {
+      const fromIsCredit =
+        entry.accountId && creditAccountIds.includes(entry.accountId);
+      const toIsCredit =
+        entry.toAccountId && creditAccountIds.includes(entry.toAccountId);
+
+      if (fromIsCredit === toIsCredit && entry.toAccountId) {
+        // Internal transfer (Cash -> Cash or Credit -> Credit)
+        // We still need to track these for balancing, even if we don't draw them
+        if (entry.accountId) {
+          accountOutflows.set(
+            entry.accountId,
+            (accountOutflows.get(entry.accountId) || 0) + entry.value,
+          );
+        }
+        if (entry.toAccountId) {
+          accountInflows.set(
+            entry.toAccountId,
+            (accountInflows.get(entry.toAccountId) || 0) + entry.value,
+          );
+        }
+        return;
+      }
+
+      if (!fromIsCredit && toIsCredit) {
+        // Cash -> Credit (Payment)
+        const targetCatId = 'credit_payments_cat';
+        const targetCatName = t('Credit card payments');
+        const targetGroupId = 'credit_payments_group';
+        const targetGroupName = t('Credit card payments');
+
+        addNode(
+          graph,
+          targetGroupId,
+          GraphLayers.CategoryGroup,
+          targetGroupName,
+        );
+        addNode(graph, targetCatId, GraphLayers.Category, targetCatName);
+        if (entry.accountId && entry.accountName) {
+          addNode(
+            graph,
+            entry.accountId,
+            GraphLayers.Account,
+            entry.accountName,
+          );
+          addValueToLink(graph, entry.accountId, targetGroupId, entry.value);
+          addValueToLink(graph, targetGroupId, targetCatId, entry.value);
+
+          accountOutflows.set(
+            entry.accountId,
+            (accountOutflows.get(entry.accountId) || 0) + entry.value,
+          );
+        }
+        if (entry.toAccountId) {
+          accountInflows.set(
+            entry.toAccountId,
+            (accountInflows.get(entry.toAccountId) || 0) + entry.value,
+          );
+        }
+      } else if (fromIsCredit && !toIsCredit) {
+        // Credit -> Cash (Cash Advance)
+        // Link directly between accounts
+        if (
+          entry.accountId &&
+          entry.accountName &&
+          entry.toAccountId &&
+          entry.toAccountName
+        ) {
+          addNode(
+            graph,
+            entry.accountId,
+            GraphLayers.Account,
+            entry.accountName,
+          );
+          addNode(
+            graph,
+            entry.toAccountId,
+            GraphLayers.Account,
+            entry.toAccountName,
+          );
+          addValueToLink(
+            graph,
+            entry.accountId,
+            entry.toAccountId,
+            entry.value,
+          );
+
+          accountOutflows.set(
+            entry.accountId,
+            (accountOutflows.get(entry.accountId) || 0) + entry.value,
+          );
+          accountInflows.set(
+            entry.toAccountId,
+            (accountInflows.get(entry.toAccountId) || 0) + entry.value,
+          );
+        }
+      } else {
+        // Transfer to/from Off-Budget
+        const targetCatId = 'transfers_cat';
+        const targetCatName = t('Transfers');
+        const targetGroupId = 'transfers_group';
+        const targetGroupName = t('Transfers');
+
+        addNode(
+          graph,
+          targetGroupId,
+          GraphLayers.CategoryGroup,
+          targetGroupName,
+        );
+        addNode(graph, targetCatId, GraphLayers.Category, targetCatName);
+        if (entry.accountId && entry.accountName) {
+          addNode(
+            graph,
+            entry.accountId,
+            GraphLayers.Account,
+            entry.accountName,
+          );
+          addValueToLink(graph, entry.accountId, targetGroupId, entry.value);
+          addValueToLink(graph, targetGroupId, targetCatId, entry.value);
+
+          accountOutflows.set(
+            entry.accountId,
+            (accountOutflows.get(entry.accountId) || 0) + entry.value,
+          );
+        }
+      }
+    } else if (entry.accountId && entry.categoryId && entry.accountName) {
       if (entry.isIncome) {
+<<<<<<< HEAD
         if (entry.isNegative) {
           // Account > Income category
           addAccountNode(entry.accountId, entry.accountName);
@@ -761,6 +1189,23 @@ export function createTransactionsGraph(categoryData: CategoryEntry[]): Graph {
           );
         } else {
           // Payee > Income category > Account
+=======
+        accountInflows.set(
+          entry.accountId,
+          (accountInflows.get(entry.accountId) || 0) + entry.value,
+        );
+
+        // Payee > Income category > Account
+        addNode(
+          graph,
+          entry.categoryId,
+          GraphLayers.IncomeCategory,
+          entry.category,
+        );
+        addNode(graph, entry.accountId, GraphLayers.Account, entry.accountName);
+        addValueToLink(graph, entry.categoryId, entry.accountId, entry.value);
+        if (entry.payeeId) {
+>>>>>>> 4547b60bc (Sanky edits)
           addNode(
             graph,
             entry.categoryId,
@@ -780,6 +1225,7 @@ export function createTransactionsGraph(categoryData: CategoryEntry[]): Graph {
           }
         }
       } else {
+<<<<<<< HEAD
         if (entry.isNegative) {
           // Account > Category group > Category
           addAccountNode(entry.accountId, entry.accountName);
@@ -826,6 +1272,128 @@ export function createTransactionsGraph(categoryData: CategoryEntry[]): Graph {
       }
     }
   });
+=======
+        accountOutflows.set(
+          entry.accountId,
+          (accountOutflows.get(entry.accountId) || 0) + entry.value,
+        );
+
+        // Account > Category group > Category
+        addNode(graph, entry.accountId, GraphLayers.Account, entry.accountName);
+        addNode(
+          graph,
+          entry.categoryGroupId,
+          GraphLayers.CategoryGroup,
+          entry.categoryGroup,
+        );
+        addNode(graph, entry.categoryId, GraphLayers.Category, entry.category);
+        addValueToLink(
+          graph,
+          entry.accountId,
+          entry.categoryGroupId,
+          entry.value,
+        );
+        addValueToLink(
+          graph,
+          entry.categoryGroupId,
+          entry.categoryId,
+          entry.value,
+        );
+      }
+    }
+  });
+
+  // Balance Accounts (Brought Forward / Credit / Carry Forward)
+  const allAccountIds = Array.from(
+    new Set([
+      ...accountInflows.keys(),
+      ...accountOutflows.keys(),
+      ...accountStartingBalances.keys(),
+    ]),
+  );
+
+  const CARRY_FORWARD_GROUP_ID = 'carry_forward_group';
+  const CARRY_FORWARD_CAT_ID = 'carry_forward_cat';
+  const CREDIT_SOURCE_ID = 'credit_source_node';
+  const CREDIT_CAT_ID = 'credit_inflow_cat';
+  const DEBT_SOURCE_ID = 'debt_source_node';
+  const DEBT_CAT_ID = 'debt_inflow_cat';
+  const BF_SOURCE_ID = 'starting_balance_node';
+  const BF_CAT_ID = 'bf_cat';
+
+  allAccountIds.forEach(accountId => {
+    const inflow = accountInflows.get(accountId) || 0;
+    const outflow = accountOutflows.get(accountId) || 0;
+    const startingBalance = accountStartingBalances.get(accountId) || 0;
+    const isCreditAccount = creditAccountIds.includes(accountId);
+
+    const deficit = outflow - inflow;
+
+    if (deficit > 0) {
+      // We spent more than we brought in this month.
+      if (isCreditAccount) {
+        // For credit accounts, all deficit is funded by Credit
+        const debtAmount = Math.round(deficit);
+        addNode(graph, CREDIT_SOURCE_ID, GraphLayers.IncomePayee, t('Credit'));
+        addNode(graph, CREDIT_CAT_ID, GraphLayers.IncomeCategory, t('Credit'));
+        addValueToLink(graph, CREDIT_SOURCE_ID, CREDIT_CAT_ID, debtAmount);
+        addValueToLink(graph, CREDIT_CAT_ID, accountId, debtAmount);
+      } else {
+        // For cash accounts, use savings first, then Debt
+        const usedFromSavings = Math.max(0, Math.min(deficit, startingBalance));
+        const debtFunded = Math.max(0, deficit - usedFromSavings);
+
+        if (usedFromSavings > 0) {
+          addNode(
+            graph,
+            BF_SOURCE_ID,
+            GraphLayers.IncomePayee,
+            t('Starting balance'),
+          );
+          addNode(
+            graph,
+            BF_CAT_ID,
+            GraphLayers.IncomeCategory,
+            t('Brought Forward'),
+          );
+          addValueToLink(graph, BF_SOURCE_ID, BF_CAT_ID, usedFromSavings);
+          addValueToLink(graph, BF_CAT_ID, accountId, usedFromSavings);
+        }
+
+        if (debtFunded > 0) {
+          const debtAmount = Math.round(debtFunded);
+          addNode(graph, DEBT_SOURCE_ID, GraphLayers.IncomePayee, t('Debt'));
+          addNode(graph, DEBT_CAT_ID, GraphLayers.IncomeCategory, t('Debt'));
+          addValueToLink(graph, DEBT_SOURCE_ID, DEBT_CAT_ID, debtAmount);
+          addValueToLink(graph, DEBT_CAT_ID, accountId, debtAmount);
+        }
+      }
+    } else if (deficit < 0 && showCarryForward && !isCreditAccount) {
+      // Surplus money in CASH accounts
+      const balance = -deficit;
+      addNode(
+        graph,
+        CARRY_FORWARD_GROUP_ID,
+        GraphLayers.CategoryGroup,
+        t('Carry Forward'),
+      );
+      addNode(
+        graph,
+        CARRY_FORWARD_CAT_ID,
+        GraphLayers.Category,
+        t('Unspent money'),
+      );
+      addValueToLink(graph, accountId, CARRY_FORWARD_GROUP_ID, balance);
+      addValueToLink(
+        graph,
+        CARRY_FORWARD_GROUP_ID,
+        CARRY_FORWARD_CAT_ID,
+        balance,
+      );
+    }
+  });
+
+>>>>>>> 4547b60bc (Sanky edits)
   return graph;
 }
 

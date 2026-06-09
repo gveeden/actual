@@ -5,7 +5,6 @@ import { Button } from '@actual-app/components/button';
 import { Input } from '@actual-app/components/input';
 import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
-
 import { send } from '@actual-app/core/platform/client/connection';
 
 import { useSyncedPref } from '#hooks/useSyncedPref';
@@ -15,8 +14,9 @@ import { Setting } from './UI';
 export function BankSyncSettings() {
   const { t } = useTranslation();
   const [clientId, setClientId] = useSyncedPref('truelayer-client-id');
-  const [clientSecret, setClientSecret] =
-    useSyncedPref('truelayer-client-secret');
+  const [clientSecret, setClientSecret] = useSyncedPref(
+    'truelayer-client-secret',
+  );
 
   const [idInput, setIdInput] = useState(clientId || '');
   const [secretInput, setSecretInput] = useState(clientSecret || '');
@@ -90,9 +90,9 @@ export function BankSyncSettings() {
         </Text>
         <Text>
           <Trans>
-            Enter your TrueLayer credentials to sync your bank accounts
-            directly from your client. Note: These secrets will be synced
-            across your devices.
+            Enter your TrueLayer credentials to sync your bank accounts directly
+            from your client. Note: These secrets will be synced across your
+            devices.
           </Trans>
         </Text>
         <div

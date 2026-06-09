@@ -319,4 +319,3 @@ describe('trueLayerBatchSync', () => {
     expect(acct2Result!.res.newTransactions).toContain('trans1');
   });
 });
-

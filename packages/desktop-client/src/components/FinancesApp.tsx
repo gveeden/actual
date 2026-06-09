@@ -159,14 +159,14 @@ export function FinancesApp() {
               title: t('A new version of Actual is available!'),
               message:
                 (process.env.REACT_APP_IS_PIKAPODS ?? '').toLowerCase() ===
-                  'true'
+                'true'
                   ? t(
-                    'A new version of Actual is available! Your Pikapods instance will be automatically updated in the next few days - no action needed.',
-                  )
+                      'A new version of Actual is available! Your Pikapods instance will be automatically updated in the next few days - no action needed.',
+                    )
                   : t(
-                    'Version {{latestVersion}} of Actual was recently released.',
-                    { latestVersion: versionInfo.latestVersion },
-                  ),
+                      'Version {{latestVersion}} of Actual was recently released.',
+                      { latestVersion: versionInfo.latestVersion },
+                    ),
               sticky: true,
               id: 'update-notification',
               button: {

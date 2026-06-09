@@ -29,6 +29,7 @@ import { useDispatch, useSelector } from '#redux';
 
 import { AuthSettings } from './AuthSettings';
 import { Backups } from './Backups';
+import { BankSyncSettings } from './BankSync';
 import { BudgetTypeSettings } from './BudgetTypeSettings';
 import { CurrencySettings } from './Currency';
 import { EncryptionSettings } from './Encryption';
@@ -40,7 +41,6 @@ import { RepairTransactions } from './RepairTransactions';
 import { ResetCache, ResetSync } from './Reset';
 import { ThemeSettings } from './Themes';
 import { AdvancedToggle, Setting } from './UI';
-import { BankSyncSettings } from './BankSync';
 
 function About() {
   const version = useServerVersion();

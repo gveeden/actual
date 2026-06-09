@@ -26,10 +26,17 @@ import {
 import type {
   Graph,
   GraphLayers,
+<<<<<<< HEAD
+=======
+  createSpreadsheet as sankeySpreadsheet,
+  calculateGraphData,
+  type SankeyRawData,
+>>>>>>> 4547b60bc (Sanky edits)
 } from '#components/reports/spreadsheets/sankey-spreadsheet';
 import { useDashboardWidgetCopyMenu } from '#components/reports/useDashboardWidgetCopyMenu';
 import { useReport } from '#components/reports/useReport';
 import { useCategories } from '#hooks/useCategories';
+import { useAccounts } from '#hooks/useAccounts';
 import { useLocale } from '#hooks/useLocale';
 import { useResizeObserver } from '#hooks/useResizeObserver';
 
@@ -56,6 +63,7 @@ export function SankeyCard({
     useDashboardWidgetCopyMenu(onCopy);
   const { data: { grouped: groupedCategories = [] } = { grouped: [] } } =
     useCategories();
+  const { data: accounts = [] } = useAccounts();
 
   const [start, end] = calculateTimeRange(meta?.timeFrame);
   const mode = meta?.mode ?? 'spent';
@@ -109,7 +117,12 @@ export function SankeyCard({
         meta?.conditions ?? [],
         meta?.conditionsOp ?? 'and',
         mode,
+<<<<<<< HEAD
         groupAccounts,
+=======
+        meta?.creditAccountIds ?? [],
+        accounts,
+>>>>>>> 4547b60bc (Sanky edits)
       ),
     [
       start,
@@ -118,6 +131,7 @@ export function SankeyCard({
       meta?.conditions,
       meta?.conditionsOp,
       mode,
+<<<<<<< HEAD
       groupAccounts,
     ],
   );
@@ -143,20 +157,56 @@ export function SankeyCard({
 
     return buildSankeyData(
       displayBaseGraph,
+=======
+      meta?.creditAccountIds,
+      accounts,
+    ],
+  );
+  const rawData = useReport<SankeyRawData>('sankey', params);
+
+  const graphData = useMemo(() => {
+    if (!rawData) return null;
+    return calculateGraphData(
+      rawData,
+>>>>>>> 4547b60bc (Sanky edits)
       topN,
       groupedCategories,
       meta?.categorySort ?? 'per-group',
       layerFrom,
       layerTo,
+<<<<<<< HEAD
     );
   }, [
     displayBaseGraph,
+=======
+      meta?.creditAccountIds ?? [],
+      meta?.showAverage ?? false,
+      start,
+      end,
+      meta?.showAccounts ?? true,
+      meta?.showCarryForward ?? true,
+    );
+  }, [
+    rawData,
+>>>>>>> 4547b60bc (Sanky edits)
     topN,
     groupedCategories,
     meta?.categorySort,
     layerFrom,
     layerTo,
+<<<<<<< HEAD
   ]);
+=======
+    meta?.creditAccountIds,
+    meta?.showAverage,
+    start,
+    end,
+    meta?.showAccounts,
+    meta?.showCarryForward,
+  ]);
+
+  const compactData = useMemo(() => graphData, [graphData]);
+>>>>>>> 4547b60bc (Sanky edits)
 
   const startDate = d.parseISO(start);
   const endDate = d.parseISO(end);
@@ -175,7 +225,10 @@ export function SankeyCard({
 
   const modeLabel = mode === 'budgeted' ? t('Budgeted') : t('Spent');
 
-  dateDescription += ` (${modeLabel})`;
+  const metaLabels = [];
+  if (meta?.showAverage) metaLabels.push(t('Monthly Average'));
+  if (meta?.showPercentages) metaLabels.push(t('Percentages'));
+  if (metaLabels.length === 0) metaLabels.push(t('Total'));
 
   return (
     <ReportCard
@@ -222,9 +275,47 @@ export function SankeyCard({
               }}
               onClose={() => setNameMenuOpen(false)}
             />
-            <Block style={{ color: theme.pageTextSubdued }}>
-              {dateDescription}
-            </Block>
+            <View
+              style={{
+                flexDirection: 'row',
+                gap: 10,
+                alignItems: 'center',
+                marginTop: 2,
+              }}
+            >
+              <Block style={{ color: theme.pageTextSubdued, fontSize: 12 }}>
+                {dateDescription}
+              </Block>
+              <View
+                style={{
+                  padding: '2px 8px',
+                  backgroundColor: theme.pillBackground,
+                  borderRadius: 10,
+                  fontSize: 10,
+                  color: theme.pillText,
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {modeLabel}
+              </View>
+              {metaLabels.map(label => (
+                <View
+                  key={label}
+                  style={{
+                    padding: '2px 8px',
+                    backgroundColor: theme.noticeBackgroundLight,
+                    borderRadius: 10,
+                    fontSize: 10,
+                    color: theme.noticeText,
+                    fontWeight: 'bold',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {label}
+                </View>
+              ))}
+            </View>
           </View>
         </View>
 

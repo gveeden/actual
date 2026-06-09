@@ -19,8 +19,8 @@ import { useFeatureFlag } from '#hooks/useFeatureFlag';
 import { useGoCardlessStatus } from '#hooks/useGoCardlessStatus';
 import { usePluggyAiStatus } from '#hooks/usePluggyAiStatus';
 import { useSimpleFinStatus } from '#hooks/useSimpleFinStatus';
-import { useTrueLayerStatus } from '#hooks/useTrueLayerStatus';
 import { useSyncServerStatus } from '#hooks/useSyncServerStatus';
+import { useTrueLayerStatus } from '#hooks/useTrueLayerStatus';
 import { pushModal } from '#modals/modalsSlice';
 import { addNotification } from '#notifications/notificationsSlice';
 import { useDispatch } from '#redux';
@@ -313,11 +313,26 @@ export function useBuiltInBankSyncProviders({
 
   const onTrueLayerReset = useCallback(async () => {
     try {
-      await send('preferences/save', { id: 'truelayer-client-id', value: undefined });
-      await send('preferences/save', { id: 'truelayer-client-secret', value: undefined });
-      await send('preferences/save', { id: 'truelayer-access-token', value: undefined });
-      await send('preferences/save', { id: 'truelayer-refresh-token', value: undefined });
-      await send('preferences/save', { id: 'truelayer-expires-at', value: undefined });
+      await send('preferences/save', {
+        id: 'truelayer-client-id',
+        value: undefined,
+      });
+      await send('preferences/save', {
+        id: 'truelayer-client-secret',
+        value: undefined,
+      });
+      await send('preferences/save', {
+        id: 'truelayer-access-token',
+        value: undefined,
+      });
+      await send('preferences/save', {
+        id: 'truelayer-refresh-token',
+        value: undefined,
+      });
+      await send('preferences/save', {
+        id: 'truelayer-expires-at',
+        value: undefined,
+      });
       setIsTrueLayerSetupComplete(false);
     } catch (error) {
       notifyResetFailure('TrueLayer', error);
@@ -487,15 +502,16 @@ export function useBuiltInBankSyncProviders({
       const externalAccounts = (results.accounts as PluggyAiAccount[]).map(
         oldAccount => ({
           account_id: oldAccount.id,
-          name: `${oldAccount.name.trim()} - ${oldAccount.type === 'BANK' ? oldAccount.taxNumber : oldAccount.owner
-            }`,
+          name: `${oldAccount.name.trim()} - ${
+            oldAccount.type === 'BANK' ? oldAccount.taxNumber : oldAccount.owner
+          }`,
           institution: oldAccount.name,
           orgDomain: null,
           orgId: oldAccount.id,
           balance:
             oldAccount.type === 'BANK'
               ? oldAccount.bankData.automaticallyInvestedBalance +
-              oldAccount.bankData.closingBalance
+                oldAccount.bankData.closingBalance
               : oldAccount.balance,
         }),
       );

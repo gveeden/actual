@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
+
 import { send } from '@actual-app/core/platform/client/connection';
 
 export function useTrueLayerStatus() {
-  const [configuredTrueLayer, setConfiguredTrueLayer] = useState<boolean | null>(null);
+  const [configuredTrueLayer, setConfiguredTrueLayer] = useState<
+    boolean | null
+  >(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

@@ -9,9 +9,9 @@ import { send } from '@actual-app/core/platform/client/connection';
 
 import { Modal, ModalCloseButton, ModalHeader } from '#components/common/Modal';
 import { useSyncedPref } from '#hooks/useSyncedPref';
-import { useDispatch } from '#redux';
 import { pushModal } from '#modals/modalsSlice';
 import type { Modal as ModalType } from '#modals/modalsSlice';
+import { useDispatch } from '#redux';
 
 type TrueLayerExternalMsgModalProps = {
   onSuccess?: () => void;
@@ -38,9 +38,15 @@ export function TrueLayerExternalMsgModal({
     const authUrl = new URL('https://auth.truelayer.com/');
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('client_id', clientId || '');
-    authUrl.searchParams.append('scope', 'info accounts balance cards transactions direct_debits standing_orders offline_access');
+    authUrl.searchParams.append(
+      'scope',
+      'info accounts balance cards transactions direct_debits standing_orders offline_access',
+    );
     authUrl.searchParams.append('redirect_uri', redirectUri);
-    authUrl.searchParams.append('providers', 'uk-ob-all uk-oauth-all uk-cs-all ie-ob-all');
+    authUrl.searchParams.append(
+      'providers',
+      'uk-ob-all uk-oauth-all uk-cs-all ie-ob-all',
+    );
     authUrl.searchParams.append('state', state);
     authUrl.searchParams.append('enable_reselection', 'true');
     authUrl.searchParams.append('enable_account_selection', 'true');
@@ -83,8 +89,9 @@ export function TrueLayerExternalMsgModal({
           <View>
             <Paragraph style={{ fontSize: 15 }}>
               <Trans>
-                To link your bank account, you will be redirected to TrueLayer to securely authenticate with your bank.
-                Actual will not be able to withdraw funds from your accounts.
+                To link your bank account, you will be redirected to TrueLayer
+                to securely authenticate with your bank. Actual will not be able
+                to withdraw funds from your accounts.
               </Trans>
             </Paragraph>
 
@@ -107,11 +114,12 @@ export function TrueLayerExternalMsgModal({
               <View style={{ marginTop: 20 }}>
                 <Paragraph style={{ color: theme.errorText }}>
                   <Trans>
-                    TrueLayer integration has not yet been configured. You need to set your Client ID and Client Secret in Settings.
+                    TrueLayer integration has not yet been configured. You need
+                    to set your Client ID and Client Secret in Settings.
                   </Trans>
                 </Paragraph>
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   onPress={() => {
                     state.close();
                     window.location.hash = '/settings'; // Simplistic jump, though better handled by navigation

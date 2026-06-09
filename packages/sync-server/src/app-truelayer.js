@@ -1,4 +1,5 @@
 import express from 'express';
+
 import { requestLoggerMiddleware } from '#util/middlewares';
 
 const app = express();
@@ -8,7 +9,10 @@ app.use(express.json());
 app.post('/exchange', async (req, res) => {
   const { code, redirectUri, clientId, clientSecret } = req.body;
 
-  console.log('[TrueLayer Server] Starting exchange for code:', code?.substring(0, 10) + '...');
+  console.log(
+    '[TrueLayer Server] Starting exchange for code:',
+    code?.substring(0, 10) + '...',
+  );
   try {
     const response = await fetch('https://auth.truelayer.com/connect/token', {
       method: 'POST',
@@ -105,7 +109,11 @@ app.post('/proxy', async (req, res) => {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
+      body: body
+        ? typeof body === 'string'
+          ? body
+          : JSON.stringify(body)
+        : undefined,
     });
 
     const responseText = await response.text();

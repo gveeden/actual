@@ -13,6 +13,7 @@ import { CashFlow } from './reports/CashFlow';
 import { Crossover } from './reports/Crossover';
 import { CustomReport } from './reports/CustomReport';
 import { Formula } from './reports/Formula';
+import { FutureMoney } from './reports/FutureMoney';
 import { NetWorth } from './reports/NetWorth';
 import { Sankey } from './reports/Sankey';
 import { Spending } from './reports/Spending';
@@ -41,6 +42,7 @@ export function ReportRouter() {
     <Routes>
       <Route path="/" element={<ReportsDashboardRouter />} />
       <Route path="/:dashboardId" element={<ReportsDashboardRouter />} />
+<<<<<<< HEAD
       <Route
         path="/net-worth"
         element={
@@ -73,6 +75,14 @@ export function ReportRouter() {
           </ReportBoundary>
         }
       />
+=======
+      <Route path="/net-worth" element={<NetWorth />} />
+      <Route path="/net-worth/:id" element={<NetWorth />} />
+      <Route path="/future-money" element={<FutureMoney />} />
+      <Route path="/future-money/:id" element={<FutureMoney />} />
+      <Route path="/crossover" element={<Crossover />} />
+      <Route path="/crossover/:id" element={<Crossover />} />
+>>>>>>> 4547b60bc (Sanky edits)
       {ageOfMoneyReportEnabled && (
         <>
           <Route

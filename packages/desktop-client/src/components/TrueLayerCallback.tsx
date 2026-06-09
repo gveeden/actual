@@ -32,7 +32,11 @@ export function TrueLayerCallback() {
 
     async function handleCallback() {
       console.log('[TrueLayer] Callback handler started');
-      console.log('[TrueLayer] URL Params:', { code: code ? 'present' : 'missing', stateParam, errorParam });
+      console.log('[TrueLayer] URL Params:', {
+        code: code ? 'present' : 'missing',
+        stateParam,
+        errorParam,
+      });
       console.log('[TrueLayer] Stored state:', storedState);
 
       if (errorParam) {
@@ -54,18 +58,25 @@ export function TrueLayerCallback() {
       }
 
       if (!stateValid) {
-        console.warn('[TrueLayer] State mismatch or missing! URL state:', stateParam, 'Stored state:', storedState);
-        console.warn('[TrueLayer] Proceeding anyway (security check bypassed for debug)...');
+        console.warn(
+          '[TrueLayer] State mismatch or missing! URL state:',
+          stateParam,
+          'Stored state:',
+          storedState,
+        );
+        console.warn(
+          '[TrueLayer] Proceeding anyway (security check bypassed for debug)...',
+        );
       }
 
       try {
         const redirectUri = window.location.origin + '/truelayer/auth_callback';
-        console.log('[TrueLayer] Sending exchange request to backend...', { 
+        console.log('[TrueLayer] Sending exchange request to backend...', {
           redirectUri,
           origin: window.location.origin,
-          protocol: window.location.protocol
+          protocol: window.location.protocol,
         });
-        
+
         const result = await send('truelayer-complete-auth', {
           code,
           redirectUri,
@@ -100,7 +111,11 @@ export function TrueLayerCallback() {
       } catch (e) {
         console.error('[TrueLayer] Unexpected exception in handleCallback:', e);
         setStatus('error');
-        setErrorMessage(t('An unexpected error occurred.') + ' ' + (e instanceof Error ? e.message : String(e)));
+        setErrorMessage(
+          t('An unexpected error occurred.') +
+            ' ' +
+            (e instanceof Error ? e.message : String(e)),
+        );
       }
     }
 

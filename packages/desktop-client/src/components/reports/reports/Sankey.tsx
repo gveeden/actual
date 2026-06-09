@@ -21,6 +21,7 @@ import { View } from '@actual-app/components/view';
 import { send } from '@actual-app/core/platform/client/connection';
 import * as monthUtils from '@actual-app/core/shared/months';
 import type {
+  AccountEntity,
   RuleConditionEntity,
   SankeyWidget,
   TimeFrame,
@@ -43,10 +44,18 @@ import {
   createBaseGraphSpreadsheet,
   GRAPH_LAYER_ORDER,
   GraphLayers,
+<<<<<<< HEAD
+=======
+  createSpreadsheet as sankeySpreadsheet,
+  calculateGraphData,
+  type SankeyRawData,
+>>>>>>> 4547b60bc (Sanky edits)
 } from '#components/reports/spreadsheets/sankey-spreadsheet';
 import type { Graph } from '#components/reports/spreadsheets/sankey-spreadsheet';
 import { useReport } from '#components/reports/useReport';
 import { fromDateRepr } from '#components/reports/util';
+import { AccountSelector } from '#components/reports/AccountSelector';
+import { useAccounts } from '#hooks/useAccounts';
 import { useCategories } from '#hooks/useCategories';
 import { useDashboardWidget } from '#hooks/useDashboardWidget';
 import { useFormatList } from '#hooks/useFormatList';
@@ -282,6 +291,48 @@ function CategorySortSelector({ value, onChange }: CategorySortSelectorProps) {
   );
 }
 
+function CreditAccountSelector({
+  accounts,
+  selectedAccountIds,
+  setSelectedAccountIds,
+}: {
+  accounts: AccountEntity[];
+  selectedAccountIds: string[];
+  setSelectedAccountIds: (ids: string[]) => void;
+}) {
+  const { t } = useTranslation();
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        ref={triggerRef}
+        variant="bare"
+        onPress={() => setIsOpen(true)}
+        aria-label={t('Select credit accounts')}
+      >
+        <SvgList style={{ width: 12, height: 12 }} />
+        <span style={{ marginLeft: 5 }}>{t('Credit accounts')}</span>
+      </Button>
+      <Popover
+        triggerRef={triggerRef}
+        placement="bottom start"
+        isOpen={isOpen}
+        onOpenChange={() => setIsOpen(false)}
+      >
+        <View style={{ padding: 10, width: 250, maxHeight: 400 }}>
+          <AccountSelector
+            accounts={accounts}
+            selectedAccountIds={selectedAccountIds}
+            setSelectedAccountIds={setSelectedAccountIds}
+          />
+        </View>
+      </Popover>
+    </>
+  );
+}
+
 type LayerSelectorProps = {
   direction: LayerDirection;
   value: GraphLayers;
@@ -373,15 +424,33 @@ function GraphModeSelector({ mode, onChange }: GraphModeSelectorProps) {
 type OptionsButtonProps = {
   showPercentages: boolean;
   onTogglePercentages: () => void;
+<<<<<<< HEAD
   groupAccounts: boolean;
   onToggleGroupAccounts: () => void;
+=======
+  showAverage: boolean;
+  onToggleAverage: () => void;
+  showAccounts: boolean;
+  onToggleShowAccounts: () => void;
+  showCarryForward: boolean;
+  onToggleShowCarryForward: () => void;
+>>>>>>> 4547b60bc (Sanky edits)
 };
 
 function OptionsButton({
   showPercentages,
   onTogglePercentages,
+<<<<<<< HEAD
   groupAccounts,
   onToggleGroupAccounts,
+=======
+  showAverage,
+  onToggleAverage,
+  showAccounts,
+  onToggleShowAccounts,
+  showCarryForward,
+  onToggleShowCarryForward,
+>>>>>>> 4547b60bc (Sanky edits)
 }: OptionsButtonProps) {
   const { t } = useTranslation();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -400,7 +469,13 @@ function OptionsButton({
         <Menu
           onMenuSelect={item => {
             if (item === 'show-percentages') onTogglePercentages();
+<<<<<<< HEAD
             if (item === 'group-accounts') onToggleGroupAccounts();
+=======
+            if (item === 'show-average') onToggleAverage();
+            if (item === 'show-accounts') onToggleShowAccounts();
+            if (item === 'show-carry-forward') onToggleShowCarryForward();
+>>>>>>> 4547b60bc (Sanky edits)
           }}
           items={[
             {
@@ -409,9 +484,25 @@ function OptionsButton({
               toggle: showPercentages,
             },
             {
+<<<<<<< HEAD
               name: 'group-accounts',
               text: t('Group accounts in Spent view'),
               toggle: groupAccounts,
+=======
+              name: 'show-average',
+              text: t('Show monthly average'),
+              toggle: showAverage,
+            },
+            {
+              name: 'show-accounts',
+              text: t('Show accounts'),
+              toggle: showAccounts,
+            },
+            {
+              name: 'show-carry-forward',
+              text: t('Show carry forward'),
+              toggle: showCarryForward,
+>>>>>>> 4547b60bc (Sanky edits)
             },
           ]}
         />
@@ -502,8 +593,19 @@ function SankeyInner({ widget }: SankeyInnerProps) {
   const [showPercentages, setShowPercentages] = useState(
     widget?.meta?.showPercentages ?? false,
   );
+<<<<<<< HEAD
   const [groupAccounts, setGroupAccounts] = useState(
     widget?.meta?.groupAccounts ?? false,
+=======
+  const [showAverage, setShowAverage] = useState(
+    widget?.meta?.showAverage ?? false,
+  );
+  const [showAccounts, setShowAccounts] = useState(
+    widget?.meta?.showAccounts ?? true,
+  );
+  const [showCarryForward, setShowCarryForward] = useState(
+    widget?.meta?.showCarryForward ?? true,
+>>>>>>> 4547b60bc (Sanky edits)
   );
 
   const [layerRange, setLayerRange] = useState<LayerRange>(() =>
@@ -560,6 +662,11 @@ function SankeyInner({ widget }: SankeyInnerProps) {
     setLayerRange(getDefaultLayerRange(graphMode));
   }
 
+  const [creditAccountIds, setCreditAccountIds] = useState<string[]>(
+    widget?.meta?.creditAccountIds ?? [],
+  );
+
+  const { data: accounts = [] } = useAccounts();
   const { data: { grouped: groupedCategories = [] } = { grouped: [] } } =
     useCategories();
 
@@ -575,7 +682,12 @@ function SankeyInner({ widget }: SankeyInnerProps) {
       conditions,
       conditionsOp,
       graphMode,
+<<<<<<< HEAD
       groupAccounts,
+=======
+      creditAccountIds,
+      accounts,
+>>>>>>> 4547b60bc (Sanky edits)
     );
   }, [
     datesInitialized,
@@ -585,6 +697,7 @@ function SankeyInner({ widget }: SankeyInnerProps) {
     conditions,
     conditionsOp,
     graphMode,
+<<<<<<< HEAD
     groupAccounts,
   ]);
 
@@ -625,6 +738,50 @@ function SankeyInner({ widget }: SankeyInnerProps) {
     layerTo,
   ]);
 
+=======
+    creditAccountIds,
+    accounts,
+  ]);
+
+  const defaultGetData = async (
+    spreadsheet: ReturnType<typeof useSpreadsheet>,
+    setData: (data: SankeyRawData) => void,
+  ) => setData({ data: [] });
+
+  const rawData = useReport<SankeyRawData>('sankey', reportParams ?? defaultGetData);
+
+  const graphData = useMemo(() => {
+    if (!rawData) return null;
+    return calculateGraphData(
+      rawData,
+      topNcategories,
+      groupedCategories,
+      categorySort,
+      layerFrom,
+      layerTo,
+      creditAccountIds,
+      showAverage,
+      start,
+      end,
+      showAccounts,
+      showCarryForward,
+    );
+  }, [
+    rawData,
+    topNcategories,
+    groupedCategories,
+    categorySort,
+    layerFrom,
+    layerTo,
+    creditAccountIds,
+    showAverage,
+    start,
+    end,
+    showAccounts,
+    showCarryForward,
+  ]);
+
+>>>>>>> 4547b60bc (Sanky edits)
   useEffect(() => {
     async function run() {
       const earliestTransaction = await send('get-earliest-transaction');
@@ -710,8 +867,12 @@ function SankeyInner({ widget }: SankeyInnerProps) {
             topNcategories,
             categorySort,
             showPercentages,
+            showAverage,
+            showAccounts,
+            showCarryForward,
             layerFrom,
             layerTo,
+            creditAccountIds,
             timeFrame: {
               start,
               end,
@@ -773,7 +934,11 @@ function SankeyInner({ widget }: SankeyInnerProps) {
     i18n.language,
   );
 
+<<<<<<< HEAD
   if (!datesInitialized || !displayData) {
+=======
+  if (!datesInitialized || !graphData) {
+>>>>>>> 4547b60bc (Sanky edits)
     return <LoadingIndicator />;
   }
 
@@ -842,10 +1007,17 @@ function SankeyInner({ widget }: SankeyInnerProps) {
               }}
             />
             <TopNSelector value={topNcategories} onChange={settopNcategories} />
-            <CategorySortSelector
+             <CategorySortSelector
               value={categorySort}
               onChange={setCategorySort}
             />
+            {graphMode === 'spent' && (
+              <CreditAccountSelector
+                accounts={accounts}
+                selectedAccountIds={creditAccountIds}
+                setSelectedAccountIds={setCreditAccountIds}
+              />
+            )}
             <View
               style={{
                 width: 1,
@@ -884,9 +1056,21 @@ function SankeyInner({ widget }: SankeyInnerProps) {
         <View style={{ marginRight: 4 }}>
           <OptionsButton
             showPercentages={showPercentages}
+<<<<<<< HEAD
             onTogglePercentages={() => setShowPercentages(v => !v)}
             groupAccounts={groupAccounts}
             onToggleGroupAccounts={() => setGroupAccounts(v => !v)}
+=======
+            onTogglePercentages={() => setShowPercentages(!showPercentages)}
+            showAverage={showAverage}
+            onToggleAverage={() => setShowAverage(!showAverage)}
+            showAccounts={showAccounts}
+            onToggleShowAccounts={() => setShowAccounts(!showAccounts)}
+            showCarryForward={showCarryForward}
+            onToggleShowCarryForward={() =>
+              setShowCarryForward(!showCarryForward)
+            }
+>>>>>>> 4547b60bc (Sanky edits)
           />
         </View>
         {widget && (
@@ -934,6 +1118,7 @@ function SankeyInner({ widget }: SankeyInnerProps) {
                   paddingTop: 10,
                 }}
               >
+<<<<<<< HEAD
                 {displayData &&
                 displayData.links &&
                 displayData.links.length > 0 ? (
@@ -950,6 +1135,14 @@ function SankeyInner({ widget }: SankeyInnerProps) {
                       showPercentages={showPercentages}
                     />
                   </View>
+=======
+                {graphData && graphData.links && graphData.links.length > 0 ? (
+                  <SankeyGraph
+                    style={{ flexGrow: 1 }}
+                    data={graphData}
+                    showPercentages={showPercentages}
+                  />
+>>>>>>> 4547b60bc (Sanky edits)
                 ) : (
                   <View
                     style={{
